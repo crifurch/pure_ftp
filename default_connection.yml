@@ -1,0 +1,5 @@
+host: localhost
+port: 21
+username: user
+password: pass
+account: empty
