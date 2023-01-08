@@ -1,5 +1,6 @@
 import 'dart:async';
 
+/// Task for FTPTaskManager
 class FtpTask<T> {
   final FutureOr<T> Function() _task;
   TaskStatus _status;
@@ -12,6 +13,7 @@ class FtpTask<T> {
   })  : _task = task,
         _status = TaskStatus.pending;
 
+  /// true if the task have any result
   bool get isCompleted =>
       _status == TaskStatus.completed ||
       _status == TaskStatus.failed ||

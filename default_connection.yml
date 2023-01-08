@@ -1,5 +1,5 @@
-host: localhost
+# https://dlptest.com/ftp-test/
+host: ftp.dlptest.com
 port: 21
-username: user
-password: pass
-account: empty
+username: dlpuser
+password: rNrKYTX9g7z3RgJRmxWuGHbeu

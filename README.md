@@ -3,12 +3,11 @@
   <br>
 </h1>
 
-[![pub package](https://img.shields.io/pub/v/pure_ftp.svg)](https://pub.dartlang.org/packages/pure_ftp)
-[![Build Status](https://github.com/crifurch/pure_ftp/workflows/build/badge.svg)](https://github.com/crifurch/pure_ftp/actions)
-[![Coverage Status](https://coveralls.io/repos/github/crifurch/pure_ftp/badge.svg?branch=master)](https://coveralls.io/github/crifurch/pure_ftp?branch=master)
+[![pub package](https://img.shields.io/pub/v/pure_ftp.svg)](https://pub.dev/packages/pure_ftp)
+[![Build Status](https://github.com/crifurch/pure_ftp/actions/workflows/dart.yml/badge.svg)](https://github.com/crifurch/pure_ftp/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-### more details [here](https://pub.dev/documentation/ftpconnect/latest/ftpconnect/ftpconnect-library.html)
+### more details [here](https://pub.dev/documentation/pure_ftp/latest/pure_ftp/pure_ftp-library.html)
 
 ### [View more Examples](https://github.com/crifurch/pure_ftp/tree/master/example)
 
