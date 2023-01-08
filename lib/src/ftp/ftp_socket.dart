@@ -169,8 +169,9 @@ class FtpSocket {
   /// if [command] is true then the message will be sent as a command
   void write(String message, {bool command = true}) {
     _socket.write(utf8.encode('$message${command ? '\r\n' : ''}'));
-    if(message.startsWith(FtpCommand.PASS.toString())) {
-      _log?.call('$_host:$_port> ${message.substring(0, 5)}${'*' * (message.length - 4)}');
+    if (message.startsWith(FtpCommand.PASS.toString())) {
+      _log?.call(
+          '$_host:$_port> ${message.substring(0, 5)}${'*' * (message.length - 4)}');
     } else {
       _log?.call('$_host:$_port> $message');
     }

@@ -1,6 +1,5 @@
 // ignore_for_file: constant_identifier_names,
 
-
 /// More information available at https://en.wikipedia.org/wiki/List_of_FTP_commands
 enum FtpCommand {
   ///Abort an active file transfer.
