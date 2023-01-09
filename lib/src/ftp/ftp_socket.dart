@@ -8,6 +8,7 @@ import 'dart:math';
 import 'package:pure_ftp/pure_ftp.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
 import 'package:pure_ftp/src/ftp/utils/data_parser_utils.dart';
+import 'package:pure_ftp/src/socket/common/client_raw_socket.dart';
 
 typedef LogCallback = void Function(dynamic message);
 
@@ -21,7 +22,7 @@ class FtpSocket {
   FtpTransferMode transferMode;
   FtpTransferType _transferType;
 
-  late RawSocket _socket;
+  late ClientRawSocket _socket;
 
   FtpSocket({
     required String host,
@@ -49,7 +50,7 @@ class FtpSocket {
     _log?.call(
         'Connecting to $_host:$_port with user:$user, pass:${'*' * pass.length}, account:$account');
     try {
-      _socket = await RawSocket.connect(
+      _socket = await ClientRawSocket.connect(
         _host,
         _port,
         timeout: _timeout,
@@ -73,10 +74,7 @@ class FtpSocket {
         }
       }
 
-      _socket = await RawSecureSocket.secure(
-        _socket,
-        onBadCertificate: (_) => true,
-      );
+      _socket = await _socket.secureSocket(ignoreCertificateErrors: true);
 
       await FtpCommand.PBSZ.writeAndRead(this, ['0']);
       await FtpCommand.PROT.writeAndRead(this, ['P']);
@@ -120,7 +118,7 @@ class FtpSocket {
       // ignore
     } finally {
       await _socket.close();
-      _socket.shutdown(SocketDirection.both);
+      await _socket.shutdown(ClientSocketDirection.readWrite);
       _log?.call('Disconnected from $_host:$_port');
     }
   }
@@ -132,8 +130,8 @@ class FtpSocket {
     final res = StringBuffer();
     await Future.doWhile(() async {
       final readMessage = _socket.readMessage();
-      if (readMessage != null && readMessage.data.isNotEmpty) {
-        res.write(String.fromCharCodes(readMessage.data).trim());
+      if (readMessage != null && readMessage.isNotEmpty) {
+        res.write(String.fromCharCodes(readMessage).trim());
         return false;
       }
       await Future.delayed(const Duration(milliseconds: 300));
