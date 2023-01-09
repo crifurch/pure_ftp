@@ -30,7 +30,7 @@ class FtpDirectory extends FtpEntry {
   @override
   Future<bool> exists() async {
     final response = await FtpCommand.CWD.writeAndRead(_fs.socket, [path]);
-    await FtpCommand.CWD.writeAndRead(_fs.socket, [_fs.currentDirectory]);
+    await FtpCommand.CWD.writeAndRead(_fs.socket, [_fs.currentDirectory.path]);
     return response.isSuccessful;
   }
 
