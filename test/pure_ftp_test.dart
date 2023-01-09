@@ -7,7 +7,11 @@ import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
 void main() async {
-  final config = loadYaml(await File('default_connection.yml').readAsString());
+  var configFile = File('test_connection.yml');
+  if (!configFile.existsSync()) {
+    configFile = File('default_connection.yml');
+  }
+  final config = loadYaml(await configFile.readAsString());
   final ftpSocket = FtpSocket(
     host: config['host'],
     port: config['port'] ?? 21,
@@ -42,6 +46,21 @@ void main() async {
     boolResponse = await dirResponse.delete();
     expect(boolResponse, true);
   });
+
+  test('file system test', () async {
+    await fs.listDirectory();
+  });
+
+  if (config['active_host'] != null)
+    test('file system test in active mode', () async {
+      ftpSocket.transferMode = FtpTransferMode.active(
+        host: config['active_host'],
+        port: int.tryParse(config['active_port'].toString()),
+      );
+      await fs.listDirectory();
+    });
+
+  ftpSocket.transferMode = FtpTransferMode.passive;
 
   test('disconnect test', () async {
     await ftpSocket.disconnect();
