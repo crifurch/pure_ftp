@@ -1,6 +1,6 @@
 # https://dlptest.com/ftp-test/
 host: ftp.dlptest.com
-port: 21
+# port: 21  # default 21 for FTP/FTPES, 990 for FTPS
 username: dlpuser
 password: rNrKYTX9g7z3RgJRmxWuGHbeu
 # account:   # if account required by server

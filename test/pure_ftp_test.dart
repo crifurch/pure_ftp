@@ -14,7 +14,7 @@ void main() async {
   final config = loadYaml(await configFile.readAsString());
   final ftpSocket = FtpSocket(
     host: config['host'],
-    port: config['port'] ?? 21,
+    port: config['port'],
     timeout: const Duration(seconds: 30),
     log: print,
   );

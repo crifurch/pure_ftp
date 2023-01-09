@@ -26,16 +26,15 @@ class FtpSocket {
 
   FtpSocket({
     required String host,
-    int port = 21,
+    int? port,
     Duration timeout = const Duration(seconds: 30),
     LogCallback? log,
     FtpTransferMode transferMode = FtpTransferMode.passive,
     FtpTransferType transferType = FtpTransferType.auto,
     SecurityType securityType = SecurityType.FTP,
     bool supportIPv6 = false,
-  })
-      : _host = host,
-        _port = port,
+  })  : _host = host,
+        _port = securityType == SecurityType.FTPS ? port ?? 990 : port ?? 21,
         _timeout = timeout,
         _log = log,
         transferMode = transferMode,
@@ -73,9 +72,16 @@ class FtpSocket {
           }
         }
       }
-
-      _socket = await _socket.secureSocket(ignoreCertificateErrors: true);
-
+      try {
+        _socket = await _socket.secureSocket(ignoreCertificateErrors: true);
+      } on HandshakeException {
+        if (!_securityType.isExplicit) {
+          throw Exception('Check if the server supports implicit FTPS'
+              ' and that port $_port is correct(990 for FTPS)');
+        } else {
+          rethrow;
+        }
+      }
       await FtpCommand.PBSZ.writeAndRead(this, ['0']);
       await FtpCommand.PROT.writeAndRead(this, ['P']);
     }
@@ -197,8 +203,9 @@ class FtpSocket {
     _transferType = type;
   }
 
-  Future<void> openTransferChannel(FutureOr Function(FutureOr<
-      Socket> socket, LogCallback? log) doStuff,) async {
+  Future<void> openTransferChannel(
+    FutureOr Function(FutureOr<Socket> socket, LogCallback? log) doStuff,
+  ) async {
     if (transferMode == FtpTransferMode.passive) {
       final passiveCommand = supportIPv6 ? FtpCommand.EPSV : FtpCommand.PASV;
       final ftpResponse = await passiveCommand.writeAndRead(this);
@@ -207,7 +214,7 @@ class FtpSocket {
       }
       final port = DataParserUtils.parsePort(ftpResponse, isIPV6: supportIPv6);
       final Socket dataSocket =
-      await Socket.connect(_host, port, timeout: _timeout);
+          await Socket.connect(_host, port, timeout: _timeout);
       try {
         await doStuff(dataSocket, _log);
       } finally {

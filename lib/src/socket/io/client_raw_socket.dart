@@ -5,6 +5,7 @@ import 'package:pure_ftp/src/socket/common/client_raw_socket.dart';
 
 class ClientRawSocketImpl extends ClientRawSocket {
   late RawSocket _socket;
+  bool _secure = false;
 
   @override
   Future<void> close() => _socket.close();
@@ -15,7 +16,8 @@ class ClientRawSocketImpl extends ClientRawSocket {
 
   @override
   List<int>? readMessage([int? length]) {
-    final read = _socket.read(length);
+    final read =
+        _secure ? _socket.read(length) : _socket.readMessage(length)?.data;
     if (read == null) {
       return null;
     }
@@ -27,13 +29,13 @@ class ClientRawSocketImpl extends ClientRawSocket {
       {bool ignoreCertificateErrors = false}) async {
     _socket = await RawSecureSocket.secure(_socket,
         onBadCertificate: (_) => ignoreCertificateErrors);
+    _secure = true;
     return this;
   }
 
   @override
-  void write(List<int> data, [int offset = 0, int? count]) {
-    _socket.write(data, offset, count);
-  }
+  void write(List<int> data, [int offset = 0, int? count]) =>
+      _socket.write(data, offset, count);
 
   @override
   Future<void> shutdown(ClientSocketDirection how) async =>
