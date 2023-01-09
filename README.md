@@ -13,16 +13,16 @@
 
 ## Package status
 
-- [x] FTP Connection
-- [ ] Upload files to FTP
-- [ ] Download files/directories from FTP
-- [ ] List FTP directory contents
-- [ ] Manage FTP files (rename/delete)
-- [X] Completely asynchronous functions
-- [X] Support Active and Passive mode
-- [X] Support for FTPS/FTPES (FTP over TLS/SSL)
-- [ ] Support for Web
-- [ ] Task Manager
+✅ FTP Connection</br>
+❌ Upload files to FTP</br>
+❌ Download files/directories from FTP</br>
+❌ List FTP directory contents</br>
+❌ Manage FTP files (rename/delete)</br>
+✅ Completely asynchronous functions</br>
+✅ Support Active and Passive mode</br>
+✅ Support for FTPS/FTPES (FTP over TLS/SSL)</br>
+❌ Support for Web</br>
+❌ Task Manager</br>
 
 This package is still in development and I will be happy to receive your feedback.
 
