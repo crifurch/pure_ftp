@@ -19,6 +19,10 @@ class FtpTask<T> {
       _status == TaskStatus.failed ||
       _status == TaskStatus.canceled;
 
+  /// true if the task is completed successfully or canceled
+  bool get isSuccessful =>
+      _status == TaskStatus.completed || _status == TaskStatus.canceled;
+
   Future<void> run() async {
     if (_status == TaskStatus.pending) {
       _status = TaskStatus.running;

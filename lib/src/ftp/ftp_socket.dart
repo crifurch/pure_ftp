@@ -196,31 +196,35 @@ class FtpSocket {
     _type = type;
   }
 
-  // Future<Socket> openTransferChannel() async {
-  //   if (_mode == FtpMode.active) {
-  //     //todo check if this is correct
-  //     final ftpResponse = await FtpCommand.PORT.writeAndRead(this, [
-  //       _socket.address.address.replaceAll('.', ','),
-  //       ((_socket.port >> 8) & 0xFF).toString(),
-  //       (_socket.port & 0xFF).toString()
-  //     ]);
-  //     if (!ftpResponse.isSuccessful) {
-  //       throw Exception('Could not open transfer channel');
-  //     }
-  //   } else {
-  //     FtpCommand command = _supportIPv6 ? FtpCommand.EPRT : FtpCommand.PASV;
-  //     final ftpResponse = await command.writeAndRead(this);
-  //     if (!ftpResponse.isSuccessful) {
-  //       throw Exception('Could not open transfer channel');
-  //     }
-  //     return _socket;
-  //   }
+// Future<Socket> openTransferChannel() async {
+//   if (_mode == FtpMode.passive) {
+//     FtpCommand command = _supportIPv6 ? FtpCommand.EPRT : FtpCommand.PASV;
+//     final ftpResponse = await command.writeAndRead(this);
+//     if (!ftpResponse.isSuccessful) {
+//       throw Exception('Could not open transfer channel');
+//     }
+//     return _socket;
+//   } else {
+//     //todo check if this is correct
+//     final ftpResponse = await FtpCommand.PORT.writeAndRead(this, [
+//       _socket.address.address.replaceAll('.', ','),
+//       ((_socket.port >> 8) & 0xFF).toString(),
+//       (_socket.port & 0xFF).toString()
+//     ]);
+//     if (!ftpResponse.isSuccessful) {
+//       throw Exception('Could not open transfer channel');
+//     }
+//   }
   // }
 }
 
 enum FtpMode {
-  active,
   passive,
+  ;
+
+  final int? activePort;
+
+  const FtpMode({this.activePort});
 }
 
 enum FtpTransferType {

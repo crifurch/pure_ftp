@@ -1,18 +1,19 @@
 import 'dart:io';
 
 import 'package:pure_ftp/pure_ftp.dart';
+import 'package:pure_ftp/src/path/ftp_directory.dart';
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
 void main() async {
   final config = loadYaml(await File('default_connection.yml').readAsString());
+  final ftpSocket = FtpSocket(
+    host: config['host'],
+    port: config['port'] ?? 21,
+    timeout: const Duration(seconds: 30),
+    log: print,
+  );
   test('connection test', () async {
-    final ftpSocket = FtpSocket(
-      host: config['host'],
-      port: config['port'] ?? 21,
-      timeout: const Duration(seconds: 30),
-      log: print,
-    );
     await ftpSocket
         .connect(
       config['username'],
@@ -22,6 +23,25 @@ void main() async {
         .then((value) {
       print('Connected');
     });
+  });
+
+  test('directory operations test', () async {
+    var ftpDirectory = FtpDirectory(
+      path: '/test',
+      socket: ftpSocket,
+    );
+    var boolResponse = await ftpDirectory.create();
+    expect(boolResponse, true);
+    var dirResponse = await ftpDirectory.rename('test1');
+    expect(dirResponse.path, '/test1');
+    ftpDirectory = dirResponse;
+    dirResponse = await ftpDirectory.move('/test2');
+    expect(dirResponse.path, '/test2');
+    boolResponse = await dirResponse.delete();
+    expect(boolResponse, true);
+  });
+
+  test('disconnect test', () async {
     await ftpSocket.disconnect();
   });
 }
