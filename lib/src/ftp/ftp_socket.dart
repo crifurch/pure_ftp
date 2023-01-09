@@ -1,11 +1,13 @@
 // ignore_for_file: constant_identifier_names
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
+import 'package:pure_ftp/pure_ftp.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
-import 'package:pure_ftp/src/ftp/ftp_commands.dart';
-import 'package:pure_ftp/src/ftp/ftp_response.dart';
+import 'package:pure_ftp/src/ftp/utils/data_parser_utils.dart';
 
 typedef LogCallback = void Function(dynamic message);
 
@@ -15,9 +17,9 @@ class FtpSocket {
   final Duration _timeout;
   final void Function(dynamic message)? _log;
   final SecurityType _securityType;
-  final bool _supportIPv6;
-  FtpMode _mode;
-  FtpTransferType _type;
+  bool supportIPv6;
+  FtpTransferMode transferMode;
+  FtpTransferType _transferType;
 
   late RawSocket _socket;
 
@@ -26,18 +28,19 @@ class FtpSocket {
     int port = 21,
     Duration timeout = const Duration(seconds: 30),
     LogCallback? log,
-    FtpMode mode = FtpMode.passive,
-    FtpTransferType type = FtpTransferType.auto,
+    FtpTransferMode transferMode = FtpTransferMode.passive,
+    FtpTransferType transferType = FtpTransferType.auto,
     SecurityType securityType = SecurityType.FTP,
     bool supportIPv6 = false,
-  })  : _host = host,
+  })
+      : _host = host,
         _port = port,
         _timeout = timeout,
         _log = log,
-        _mode = mode,
-        _type = type,
+        transferMode = transferMode,
+        _transferType = transferType,
         _securityType = securityType,
-        _supportIPv6 = supportIPv6;
+        supportIPv6 = supportIPv6;
 
   /// Connect to the FTP Server with given credentials
   ///
@@ -99,7 +102,7 @@ class FtpSocket {
     if (!ftpResponse.isSuccessful) {
       throw Exception('Wrong Username/password');
     }
-    await FtpCommand.TYPE.writeAndRead(this, [_type.type]);
+    await FtpCommand.TYPE.writeAndRead(this, [_transferType.type]);
     _log?.call('Logged in');
   }
 
@@ -186,45 +189,76 @@ class FtpSocket {
     return read();
   }
 
-  FtpTransferType get type => _type;
+  FtpTransferType get transferType => _transferType;
 
   Future<void> setTransferType(FtpTransferType type) async {
-    if (_type == type) {
+    if (transferType == type) {
       return;
     }
     await FtpCommand.TYPE.writeAndRead(this, [type.type]);
-    _type = type;
+    _transferType = type;
   }
 
-// Future<Socket> openTransferChannel() async {
-//   if (_mode == FtpMode.passive) {
-//     FtpCommand command = _supportIPv6 ? FtpCommand.EPRT : FtpCommand.PASV;
-//     final ftpResponse = await command.writeAndRead(this);
-//     if (!ftpResponse.isSuccessful) {
-//       throw Exception('Could not open transfer channel');
-//     }
-//     return _socket;
-//   } else {
-//     //todo check if this is correct
-//     final ftpResponse = await FtpCommand.PORT.writeAndRead(this, [
-//       _socket.address.address.replaceAll('.', ','),
-//       ((_socket.port >> 8) & 0xFF).toString(),
-//       (_socket.port & 0xFF).toString()
-//     ]);
-//     if (!ftpResponse.isSuccessful) {
-//       throw Exception('Could not open transfer channel');
-//     }
-//   }
-  // }
+  Future<void> openTransferChannel(FutureOr Function(FutureOr<
+      Socket> socket, LogCallback? log) doStuff,) async {
+    if (transferMode == FtpTransferMode.passive) {
+      final passiveCommand = supportIPv6 ? FtpCommand.EPSV : FtpCommand.PASV;
+      final ftpResponse = await passiveCommand.writeAndRead(this);
+      if (!ftpResponse.isSuccessful) {
+        throw Exception('Could not open transfer channel');
+      }
+      final port = DataParserUtils.parsePort(ftpResponse, isIPV6: supportIPv6);
+      final Socket dataSocket =
+      await Socket.connect(_host, port, timeout: _timeout);
+      try {
+        await doStuff(dataSocket, _log);
+      } finally {
+        await dataSocket.close();
+      }
+      return;
+    }
+    //active mode
+    final server = await ServerSocket.bind(InternetAddress.anyIPv4,
+        transferMode.port ?? Random().nextInt(10000) + 10000);
+
+    _log?.call('Listening on ${server.address.address}:${server.port}');
+
+    final ftpResponse = await FtpCommand.PORT.writeAndRead(this, [
+      [
+        transferMode.host!.replaceAll('.', ','),
+        ((server.port >> 8) & 0xFF).toString(),
+        (server.port & 0xFF).toString()
+      ].join(',')
+    ]);
+    if (!ftpResponse.isSuccessful) {
+      await server.close();
+      throw Exception('Could not open transfer channel');
+    }
+    try {
+      await doStuff(server.first.timeout(_timeout), _log);
+    } finally {
+      await server.close();
+    }
+  }
 }
 
-enum FtpMode {
-  passive,
-  ;
+class FtpTransferMode {
+  static const FtpTransferMode passive = FtpTransferMode._();
+  final String? host;
+  final int? port;
 
-  final int? activePort;
+  /// Creates an active FtpTransferMode
+  /// [host] is the host to connect from ftp server
+  /// [port] is the port to use for the active mode
+  /// if [port] is null a random port will be used
+  ///
+  /// if you want to use passive mode use [FtpTransferMode.passive]
+  const FtpTransferMode.active({required this.host, this.port})
+      : assert(port == null || port > 0);
 
-  const FtpMode({this.activePort});
+  const FtpTransferMode._()
+      : port = -1,
+        host = null;
 }
 
 enum FtpTransferType {

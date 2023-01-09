@@ -18,7 +18,8 @@
 - [ ] Download files/directories from FTP
 - [ ] List FTP directory contents
 - [ ] Manage FTP files (rename/delete)
-- [ ] Completely asynchronous functions
+- [X] Completely asynchronous functions
+- [X] Support Active and Passive mode
 - [X] Support for FTPS/FTPES (FTP over TLS/SSL)
 - [ ] Support for Web
 - [ ] Task Manager
