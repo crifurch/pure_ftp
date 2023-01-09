@@ -38,9 +38,9 @@ class FtpFile extends FtpEntry {
   }
 
   @override
-  Future<bool> exists() {
-    // TODO: implement exists
-    throw UnimplementedError();
+  Future<bool> exists() async {
+    final response = await FtpCommand.SIZE.writeAndRead(_fs.socket, [path]);
+    return response.isSuccessful;
   }
 
   @override
@@ -48,7 +48,7 @@ class FtpFile extends FtpEntry {
   bool get isDirectory => throw UnimplementedError();
 
   @override
-  Future<FtpEntry> move(String newPath) async {
+  Future<FtpFile> move(String newPath) async {
     final newFile = newPath.startsWith(_fs.rootDirectory.path)
         ? FtpFile(path: newPath, fs: _fs)
         : parent.getChildFile(newPath);
@@ -58,11 +58,39 @@ class FtpFile extends FtpEntry {
     if (!await newFile.parent.exists()) {
       throw Exception('Parent directory of new file does not exist');
     }
-
-    // TODO: implement move
-    throw UnimplementedError();
+    final response = await FtpCommand.RNFR.writeAndRead(_fs.socket, [path]);
+    if (!response.isSuccessful) {
+      throw Exception('Cannot move file');
+    }
+    final response2 =
+        await FtpCommand.RNTO.writeAndRead(_fs.socket, [newFile.path]);
+    if (!response2.isSuccessful) {
+      throw Exception('Cannot move file');
+    }
+    return newFile;
   }
 
   @override
-  Future<FtpEntry> rename(String newName) => move(newName);
+  Future<FtpFile> rename(String newName) async {
+    if (newName.contains('/')) {
+      throw Exception('New name cannot contain path separator');
+    }
+    final newFile = parent.getChildFile(newName);
+    if (newFile.path == path) {
+      return this;
+    }
+    if (!await newFile.parent.exists()) {
+      throw Exception('Parent directory of new file does not exist');
+    }
+    final response = await FtpCommand.RNFR.writeAndRead(_fs.socket, [path]);
+    if (!response.isSuccessful) {
+      throw Exception('Cannot rename file');
+    }
+    final response2 =
+        await FtpCommand.RNTO.writeAndRead(_fs.socket, [newFile.path]);
+    if (!response2.isSuccessful) {
+      throw Exception('Cannot rename file');
+    }
+    return newFile;
+  }
 }
