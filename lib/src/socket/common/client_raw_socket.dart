@@ -1,7 +1,11 @@
 import 'dart:async';
 
+import 'package:pure_ftp/src/socket/common/client_socket_direction.dart';
+
 import '../io/client_raw_socket.dart'
-if (dart.html) '../io/client_raw_socket.dart';
+    if (dart.html) '../io/client_raw_socket.dart';
+
+export 'package:pure_ftp/src/socket/common/client_socket_direction.dart';
 
 abstract class ClientRawSocket {
   static Future<ClientRawSocket> connect(String host, int port,
@@ -23,10 +27,4 @@ abstract class ClientRawSocket {
   Future<void> close();
 
   Future<void> shutdown(ClientSocketDirection how);
-}
-
-enum ClientSocketDirection {
-  read,
-  write,
-  readWrite,
 }

@@ -9,6 +9,7 @@ import 'package:pure_ftp/pure_ftp.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
 import 'package:pure_ftp/src/ftp/utils/data_parser_utils.dart';
 import 'package:pure_ftp/src/socket/common/client_raw_socket.dart';
+import 'package:pure_ftp/src/socket/common/client_socket.dart';
 
 typedef LogCallback = void Function(dynamic message);
 
@@ -204,7 +205,7 @@ class FtpSocket {
   }
 
   Future<void> openTransferChannel(
-    FutureOr Function(FutureOr<Socket> socket, LogCallback? log) doStuff,
+    FutureOr Function(FutureOr<ClientSocket> socket, LogCallback? log) doStuff,
   ) async {
     if (transferMode == FtpTransferMode.passive) {
       final passiveCommand = supportIPv6 ? FtpCommand.EPSV : FtpCommand.PASV;
@@ -213,12 +214,12 @@ class FtpSocket {
         throw Exception('Could not open transfer channel');
       }
       final port = DataParserUtils.parsePort(ftpResponse, isIPV6: supportIPv6);
-      final Socket dataSocket =
-          await Socket.connect(_host, port, timeout: _timeout);
+      final ClientSocket dataSocket =
+          await ClientSocket.connect(_host, port, timeout: _timeout);
       try {
         await doStuff(dataSocket, _log);
       } finally {
-        await dataSocket.close();
+        await dataSocket.close(ClientSocketDirection.readWrite);
       }
       return;
     }
@@ -240,7 +241,8 @@ class FtpSocket {
       throw Exception('Could not open transfer channel');
     }
     try {
-      await doStuff(server.first.timeout(_timeout), _log);
+      // todo uncomment after abstraction on host socket
+      //await doStuff(server.first.timeout(_timeout), _log);
     } finally {
       await server.close();
     }
