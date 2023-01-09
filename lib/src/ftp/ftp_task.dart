@@ -23,10 +23,24 @@ class FtpTask<T> {
   bool get isSuccessful =>
       _status == TaskStatus.completed || _status == TaskStatus.canceled;
 
-  Future<void> run() async {
+  Future<void> run({int retryCount = 1}) async {
     if (_status == TaskStatus.pending) {
       _status = TaskStatus.running;
       try {
+        int retry = 0;
+        await Future.doWhile(() async {
+          try {
+            _result = await _task();
+            return false;
+          } catch (e, s) {
+            _error = e;
+            _stackTrace = s;
+            if (retry++ >= retryCount) {
+              return true;
+            }
+          }
+          return true;
+        });
         _result = await _task();
       } catch (e, s) {
         _status = TaskStatus.failed;

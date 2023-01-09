@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:pure_ftp/pure_ftp.dart';
 import 'package:pure_ftp/src/path/ftp_directory.dart';
+import 'package:pure_ftp/src/path/ftp_file_system.dart';
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
@@ -13,6 +14,7 @@ void main() async {
     timeout: const Duration(seconds: 30),
     log: print,
   );
+  final fs = FtpFileSystem(socket: ftpSocket);
   test('connection test', () async {
     await ftpSocket
         .connect(
@@ -28,7 +30,7 @@ void main() async {
   test('directory operations test', () async {
     var ftpDirectory = FtpDirectory(
       path: '/test',
-      socket: ftpSocket,
+      fs: fs,
     );
     var boolResponse = await ftpDirectory.create();
     expect(boolResponse, true);
