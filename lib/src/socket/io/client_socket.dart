@@ -7,6 +7,10 @@ import 'package:pure_ftp/src/socket/common/client_socket.dart';
 class ClientSocketImpl extends ClientSocket {
   late Socket _socket;
 
+  ClientSocketImpl();
+
+  ClientSocketImpl.fromSocket(this._socket);
+
   Future<void> connect(String host, int port, {Duration? timeout}) async {
     _socket = await Socket.connect(host, port, timeout: timeout);
   }
