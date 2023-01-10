@@ -10,7 +10,6 @@ class FtpFileSystem {
   final _rootPath = '/';
   final FtpSocket _socket;
   late FtpDirectory _currentDirectory;
-  final _fileSystemInfo = <String, dynamic>{};
   ListCommand listCommand = ListCommand.LIST;
 
   FtpFileSystem({
