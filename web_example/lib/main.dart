@@ -24,9 +24,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final List<String> lines = [
-    'Start Demo'
-  ];
+  final List<String> lines = ['Start Demo'];
 
   @override
   Widget build(BuildContext context) {
@@ -36,8 +34,9 @@ class _MyHomePageState extends State<MyHomePage> {
     ));
   }
 
-  void _log(dynamic message) {
-    var string = message.toString();
-    lines.addAll(string.split('\n'));
-  }
+//todo uncomment this code to run the demo
+// void _log(dynamic message) {
+//   var string = message.toString();
+//   lines.addAll(string.split('\n'));
+// }
 }

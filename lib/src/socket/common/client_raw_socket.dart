@@ -18,7 +18,8 @@ abstract class ClientRawSocket {
 
   List<int>? readMessage();
 
-  void write(List<int> data, [
+  void write(
+    List<int> data, [
     int offset = 0,
     int? count,
   ]);
