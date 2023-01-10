@@ -10,6 +10,8 @@ import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
 import 'package:pure_ftp/src/ftp/utils/data_parser_utils.dart';
 import 'package:pure_ftp/src/socket/common/client_raw_socket.dart';
 import 'package:pure_ftp/src/socket/common/client_socket.dart';
+import 'package:pure_ftp/src/socket/common/host_server.dart';
+import 'package:pure_ftp/src/socket/common/web_io_network_address.dart';
 
 typedef LogCallback = void Function(dynamic message);
 
@@ -224,10 +226,10 @@ class FtpSocket {
       return;
     }
     //active mode
-    final server = await ServerSocket.bind(InternetAddress.anyIPv4,
+    final server = await HostServer.bind(WebIONetworkAddress.anyIPv4.host,
         transferMode.port ?? Random().nextInt(10000) + 10000);
 
-    _log?.call('Listening on ${server.address.address}:${server.port}');
+    _log?.call('Listening on ${server.address}:${server.port}');
 
     final ftpResponse = await FtpCommand.PORT.writeAndRead(this, [
       [
@@ -241,8 +243,7 @@ class FtpSocket {
       throw Exception('Could not open transfer channel');
     }
     try {
-      // todo uncomment after abstraction on host socket
-      //await doStuff(server.first.timeout(_timeout), _log);
+      await doStuff(server.firstSocket.timeout(_timeout), _log);
     } finally {
       await server.close();
     }
