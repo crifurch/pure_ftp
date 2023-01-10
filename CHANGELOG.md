@@ -5,3 +5,10 @@
 ## 0.1.1
 
 - Fix documentation and add test
+
+## 0.3.0
+
+- add capability to build on web(by adding abstract classes)
+- now you can use this package on web and mobile but on web all the methods will throw an UnsupportedError
+- Implements base of ftp file system
+- add flutter web example[WIP]
