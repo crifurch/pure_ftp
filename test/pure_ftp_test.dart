@@ -48,7 +48,8 @@ void main() async {
   });
 
   test('file system test', () async {
-    await fs.listDirectory();
+    final result = await fs.listDirectory();
+    result.forEach(print);
   });
 
   if (config['active_host'] != null)
