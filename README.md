@@ -16,7 +16,7 @@
 ✅ FTP Connection</br>
 ❌ Upload files to FTP</br>
 ❌ Download files/directories from FTP</br>
-❌ List FTP directory contents</br>
+✅ List FTP directory contents</br>
 ❌ Manage FTP files (rename/delete)</br>
 ✅ Completely asynchronous functions</br>
 ✅ Support Active and Passive mode</br>
