@@ -18,6 +18,7 @@ void main() async {
     timeout: const Duration(seconds: 30),
     log: print,
   );
+  final fs = FtpFileSystem(socket: ftpSocket);
   test('connection test', () async {
     await ftpSocket
         .connect(
@@ -28,10 +29,9 @@ void main() async {
         .then((value) {
       print('Connected');
     });
+    await fs.init();
   });
 
-  final fs = FtpFileSystem(socket: ftpSocket);
-  await fs.init();
   test('directory operations test', () async {
     var ftpDirectory = FtpDirectory(
       path: '/test',

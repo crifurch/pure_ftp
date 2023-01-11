@@ -16,3 +16,7 @@
 ## 0.4.1
 
 - implements parse directory content on list command
+
+## 0.4.2
+
+- fix tests
