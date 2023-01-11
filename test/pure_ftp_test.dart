@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:pure_ftp/pure_ftp.dart';
-import 'package:pure_ftp/src/path/ftp_directory.dart';
-import 'package:pure_ftp/src/path/ftp_file_system.dart';
+import 'package:pure_ftp/src/file_system/ftp_directory.dart';
+import 'package:pure_ftp/src/file_system/ftp_file_system.dart';
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 

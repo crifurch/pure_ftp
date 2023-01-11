@@ -1,16 +1,16 @@
 // ignore_for_file: constant_identifier_names
 
+import 'package:pure_ftp/src/file_system/ftp_directory.dart';
+import 'package:pure_ftp/src/file_system/ftp_entry.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
 import 'package:pure_ftp/src/ftp/ftp_commands.dart';
 import 'package:pure_ftp/src/ftp/ftp_socket.dart';
-import 'package:pure_ftp/src/path/ftp_directory.dart';
-import 'package:pure_ftp/src/path/ftp_entry.dart';
 
 class FtpFileSystem {
   final _rootPath = '/';
   final FtpSocket _socket;
   late FtpDirectory _currentDirectory;
-  ListCommand listCommand = ListCommand.LIST;
+  ListType listType = ListType.LIST;
 
   FtpFileSystem({
     required FtpSocket socket,
@@ -75,7 +75,7 @@ class FtpFileSystem {
     final dir = directory ?? _currentDirectory;
     final result = <FtpEntry>[];
     await _socket.openTransferChannel((socketFuture, log) async {
-      listCommand.command.write(_socket, [dir.path]);
+      listType.command.write(_socket, [dir.path]);
       //will be closed by the transfer channel
       // ignore: close_sinks
       final socket = await socketFuture;
@@ -97,12 +97,12 @@ class FtpFileSystem {
   }
 }
 
-enum ListCommand {
+enum ListType {
   LIST(FtpCommand.LIST),
   MLSD(FtpCommand.MLSD),
   ;
 
   final FtpCommand command;
 
-  const ListCommand(this.command);
+  const ListType(this.command);
 }
