@@ -93,4 +93,16 @@ class FtpFile extends FtpEntry {
     }
     return newFile;
   }
+
+  FtpFile copyWith(String path) {
+    return FtpFile(
+      path: path,
+      fs: _fs,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'FtpFile(path: $path)';
+  }
 }

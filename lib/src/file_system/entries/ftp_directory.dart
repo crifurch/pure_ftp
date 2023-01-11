@@ -135,4 +135,9 @@ class FtpDirectory extends FtpEntry {
       fs: _fs,
     );
   }
+
+  @override
+  String toString() {
+    return 'FtpDirectory(path: $path)';
+  }
 }
