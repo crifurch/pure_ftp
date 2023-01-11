@@ -1,5 +1,5 @@
 name: pure_ftp
-description: Simple and powerful FTP client for Dart.
+description: Simple and powerful FTP client for Dart. Allow you to connect to FTP server and perform basic operations. now supports all native platforms(Web in progress)
 version: 0.4.2
 homepage: https://github.com/crifurch/pure_ftp
 
