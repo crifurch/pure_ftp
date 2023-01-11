@@ -12,3 +12,11 @@
 - now you can use this package on web and mobile but on web all the methods will throw an UnsupportedError
 - Implements base of ftp file system
 - add flutter web example[WIP]
+
+## 0.4.1
+
+- implements parse directory content on list command
+
+## 0.4.2
+
+- fix tests

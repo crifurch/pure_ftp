@@ -1,7 +1,7 @@
 import 'package:pure_ftp/pure_ftp.dart';
+import 'package:pure_ftp/src/file_system/ftp_entry.dart';
+import 'package:pure_ftp/src/file_system/ftp_file_system.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
-import 'package:pure_ftp/src/path/ftp_entry.dart';
-import 'package:pure_ftp/src/path/ftp_file_system.dart';
 
 class FtpDirectory extends FtpEntry {
   final FtpFileSystem _fs;
@@ -134,5 +134,10 @@ class FtpDirectory extends FtpEntry {
       path: path,
       fs: _fs,
     );
+  }
+
+  @override
+  String toString() {
+    return 'FtpDirectory(path: $path)';
   }
 }

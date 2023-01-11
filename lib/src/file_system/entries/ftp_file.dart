@@ -1,8 +1,8 @@
 import 'package:pure_ftp/src/extensions/ftp_directory_extensions.dart';
+import 'package:pure_ftp/src/file_system/ftp_entry.dart';
+import 'package:pure_ftp/src/file_system/ftp_file_system.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
 import 'package:pure_ftp/src/ftp/ftp_commands.dart';
-import 'package:pure_ftp/src/path/ftp_entry.dart';
-import 'package:pure_ftp/src/path/ftp_file_system.dart';
 
 class FtpFile extends FtpEntry {
   final FtpFileSystem _fs;
@@ -92,5 +92,17 @@ class FtpFile extends FtpEntry {
       throw Exception('Cannot rename file');
     }
     return newFile;
+  }
+
+  FtpFile copyWith(String path) {
+    return FtpFile(
+      path: path,
+      fs: _fs,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'FtpFile(path: $path)';
   }
 }

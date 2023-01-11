@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:pure_ftp/pure_ftp.dart';
-import 'package:pure_ftp/src/path/ftp_directory.dart';
-import 'package:pure_ftp/src/path/ftp_file_system.dart';
+import 'package:pure_ftp/src/file_system/entries/ftp_directory.dart';
+import 'package:pure_ftp/src/file_system/ftp_file_system.dart';
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
@@ -29,6 +29,7 @@ void main() async {
         .then((value) {
       print('Connected');
     });
+    await fs.init();
   });
 
   test('directory operations test', () async {
@@ -48,7 +49,8 @@ void main() async {
   });
 
   test('file system test', () async {
-    await fs.listDirectory();
+    final result = await fs.listDirectory();
+    result.forEach(print);
   });
 
   if (config['active_host'] != null)
@@ -57,7 +59,8 @@ void main() async {
         host: config['active_host'],
         port: int.tryParse(config['active_port'].toString()),
       );
-      await fs.listDirectory();
+      final list = await fs.listDirectory();
+      list.forEach(print);
     });
 
   ftpSocket.transferMode = FtpTransferMode.passive;
