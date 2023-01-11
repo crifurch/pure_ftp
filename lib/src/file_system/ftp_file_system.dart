@@ -101,8 +101,8 @@ class FtpFileSystem {
 
   Future<List<FtpEntry>> listDirectory([FtpDirectory? directory]) async {
     final dir = directory ?? _currentDirectory;
-    final result = <FtpEntry>[];
-    await _socket.openTransferChannel((socketFuture, log) async {
+    final result = await _socket
+        .openTransferChannel<List<FtpEntry>>((socketFuture, log) async {
       listType.command.write(_socket, [dir.path]);
       //will be closed by the transfer channel
       // ignore: close_sinks
@@ -144,10 +144,37 @@ class FtpFileSystem {
           throw Exception('Unknown type');
         }
       });
-      result.addAll(remappedEntries.keys);
+      return remappedEntries.keys.toList();
     });
     return result;
   }
+
+  Future<List<String>> listDirectoryNames([FtpDirectory? directory]) =>
+      _socket.openTransferChannel<List<String>>((socketFuture, log) async {
+        FtpCommand.NLST.write(
+          _socket,
+          [directory?.path ?? _currentDirectory.path],
+        );
+        //will be closed by the transfer channel
+        // ignore: close_sinks
+        final socket = await socketFuture;
+        final response = await _socket.read();
+
+        // wait 125 || 150 and >200 that indicates the end of the transfer
+        final bool transferCompleted = response.isSuccessful;
+        if (!transferCompleted) {
+          throw Exception('Error while listing directory names');
+        }
+        final List<int> data = [];
+        await socket.listen(data.addAll).asFuture();
+        final listData = String.fromCharCodes(data);
+        log?.call(listData);
+        return listData
+            .split('\n')
+            .map((e) => e.trim())
+            .where((element) => element.isNotEmpty)
+            .toList();
+      });
 }
 
 enum ListType {

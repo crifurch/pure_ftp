@@ -206,8 +206,9 @@ class FtpSocket {
     _transferType = type;
   }
 
-  Future<void> openTransferChannel(
-    FutureOr Function(FutureOr<ClientSocket> socket, LogCallback? log) doStuff,
+  Future<T> openTransferChannel<T>(
+    FutureOr<T> Function(FutureOr<ClientSocket> socket, LogCallback? log)
+        doStuff,
   ) async {
     if (transferMode == FtpTransferMode.passive) {
       final passiveCommand = supportIPv6 ? FtpCommand.EPSV : FtpCommand.PASV;
@@ -218,12 +219,13 @@ class FtpSocket {
       final port = DataParserUtils.parsePort(ftpResponse, isIPV6: supportIPv6);
       final ClientSocket dataSocket =
           await ClientSocket.connect(_host, port, timeout: _timeout);
+      T result;
       try {
-        await doStuff(dataSocket, _log);
+        result = await doStuff(dataSocket, _log);
       } finally {
         await dataSocket.close(ClientSocketDirection.readWrite);
       }
-      return;
+      return result;
     }
     //active mode
     final server = await HostServer.bind(WebIONetworkAddress.anyIPv4.host,
@@ -242,11 +244,14 @@ class FtpSocket {
       await server.close();
       throw Exception('Could not open transfer channel');
     }
+
+    T result;
     try {
-      await doStuff(server.firstSocket.timeout(_timeout), _log);
+      result = await doStuff(server.firstSocket.timeout(_timeout), _log);
     } finally {
       await server.close();
     }
+    return result;
   }
 }
 
