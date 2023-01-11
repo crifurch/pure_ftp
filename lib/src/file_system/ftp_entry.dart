@@ -1,8 +1,8 @@
 import 'package:meta/meta.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_directory.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_file.dart';
+import 'package:pure_ftp/src/file_system/entries/ftp_link.dart';
 import 'package:pure_ftp/src/file_system/ftp_file_system.dart';
-import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
 
 @immutable
 abstract class FtpEntry {
@@ -38,16 +38,20 @@ abstract class FtpEntry {
   Future<FtpEntry> move(String newPath);
 
   T as<T extends FtpEntry>() {
-    if (T == FtpEntry) {
-      return this as T;
+    switch (T) {
+      case FtpDirectory:
+        return FtpDirectory(path: path, fs: _fs) as T;
+      case FtpFile:
+        return FtpFile(path: path, fs: _fs) as T;
+      case FtpLink:
+        return FtpLink(
+          path: path,
+          fs: _fs,
+          linkTarget: '__unknown__${path.hashCode ^ _fs.hashCode}',
+        ) as T;
+      default:
+        throw UnsupportedError('Cannot cast to $T');
     }
-    if (T == FtpDirectory) {
-      return this as T;
-    }
-    if (T == FtpFile) {
-      return this as T;
-    }
-    throw FtpException('Cannot cast to $T');
   }
 
   @override
