@@ -4,6 +4,7 @@ import 'package:pure_ftp/src/file_system/entries/ftp_directory.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_file.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_link.dart';
 import 'package:pure_ftp/src/file_system/ftp_entry.dart';
+import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
 import 'package:pure_ftp/src/ftp/extensions/string_find_extension.dart';
 import 'package:pure_ftp/src/ftp/ftp_commands.dart';
@@ -114,9 +115,9 @@ class FtpFileSystem {
           response.isSuccessful || response.code == 125 || response.code == 150;
       if (!transferCompleted) {
         if (response.code == 500 && listType == ListType.MLSD) {
-          throw Exception('MLSD command not supported by server');
+          throw FtpException('MLSD command not supported by server');
         }
-        throw Exception('Error while listing directory');
+        throw FtpException('Error while listing directory');
       }
       final List<int> data = [];
       await socket.listen(data.addAll).asFuture();
@@ -141,7 +142,7 @@ class FtpFileSystem {
               ),
               v);
         } else {
-          throw Exception('Unknown type');
+          throw FtpException('Unknown type');
         }
       });
       return remappedEntries.keys.toList();
@@ -163,7 +164,7 @@ class FtpFileSystem {
         // wait 125 || 150 and >200 that indicates the end of the transfer
         final bool transferCompleted = response.isSuccessful;
         if (!transferCompleted) {
-          throw Exception('Error while listing directory names');
+          throw FtpException('Error while listing directory names');
         }
         final List<int> data = [];
         await socket.listen(data.addAll).asFuture();

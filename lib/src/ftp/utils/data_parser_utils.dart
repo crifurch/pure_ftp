@@ -4,6 +4,7 @@ import 'package:pure_ftp/src/file_system/entries/ftp_link.dart';
 import 'package:pure_ftp/src/file_system/ftp_entry.dart';
 import 'package:pure_ftp/src/file_system/ftp_entry_info.dart';
 import 'package:pure_ftp/src/file_system/ftp_file_system.dart';
+import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
 import 'package:pure_ftp/src/ftp/ftp_response.dart';
 
 abstract class DataParserUtils {
@@ -17,7 +18,7 @@ abstract class DataParserUtils {
     required bool isIPV6,
   }) {
     if (!response.isSuccessful) {
-      throw Exception('Could not parse port from response: $response');
+      throw FtpException('Could not parse port from response: $response');
     }
     return isIPV6 ? _parsePortEPSV(response) : _parsePortPASV(response);
   }

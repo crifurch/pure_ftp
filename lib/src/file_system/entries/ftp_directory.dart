@@ -1,6 +1,7 @@
 import 'package:pure_ftp/pure_ftp.dart';
 import 'package:pure_ftp/src/file_system/ftp_entry.dart';
 import 'package:pure_ftp/src/file_system/ftp_file_system.dart';
+import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
 
 class FtpDirectory extends FtpEntry {
@@ -14,7 +15,7 @@ class FtpDirectory extends FtpEntry {
   @override
   FtpDirectory get parent {
     if (isRoot) {
-      throw Exception('Root directory has no parent');
+      throw FtpException('Root directory has no parent');
     }
     return super.parent;
   }
@@ -53,17 +54,17 @@ class FtpDirectory extends FtpEntry {
   @override
   Future<FtpDirectory> rename(String newName) async {
     if (isRoot) {
-      throw Exception('Cannot rename root directory');
+      throw FtpException('Cannot rename root directory');
     }
     if (newName.contains('/')) {
-      throw Exception('New name cannot contain path separator');
+      throw FtpException('New name cannot contain path separator');
     }
     if (!await exists()) {
-      throw Exception('Directory does not exist');
+      throw FtpException('Directory does not exist');
     }
     var response = await FtpCommand.RNFR.writeAndRead(_fs.socket, [path]);
     if (response.code != 350) {
-      throw Exception('Could not rename directory');
+      throw FtpException('Could not rename directory');
     }
 
     var newPath = '${parent.path}/$newName';
@@ -75,7 +76,7 @@ class FtpDirectory extends FtpEntry {
       newPath,
     ]);
     if (!response.isSuccessful) {
-      throw Exception('Could not rename directory');
+      throw FtpException('Could not rename directory');
     }
     return FtpDirectory(path: newPath, fs: _fs);
   }
@@ -92,28 +93,28 @@ class FtpDirectory extends FtpEntry {
   @override
   Future<FtpDirectory> move(String newPath) async {
     if (!await exists()) {
-      throw Exception('Directory does not exist');
+      throw FtpException('Directory does not exist');
     }
     if (newPath == path) {
       return this;
     }
     if (!newPath.startsWith('/')) {
-      throw Exception(
+      throw FtpException(
           'New path must be absolute, to rename use rename(new name)');
     }
     final newDirectory = FtpDirectory(path: newPath, fs: _fs).parent;
     if (!await newDirectory.exists()) {
-      throw Exception('directory does not exist: ${newDirectory.path}');
+      throw FtpException('directory does not exist: ${newDirectory.path}');
     }
     var response = await FtpCommand.RNFR.writeAndRead(_fs.socket, [path]);
     if (response.code != 350) {
-      throw Exception('Could not move directory');
+      throw FtpException('Could not move directory');
     }
     response = await FtpCommand.RNTO.writeAndRead(_fs.socket, [
       newPath,
     ]);
     if (!response.isSuccessful) {
-      throw Exception('Could not move directory');
+      throw FtpException('Could not move directory');
     }
     return FtpDirectory(path: newPath, fs: _fs);
   }
