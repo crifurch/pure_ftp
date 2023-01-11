@@ -18,7 +18,6 @@ void main() async {
     timeout: const Duration(seconds: 30),
     log: print,
   );
-  final fs = FtpFileSystem(socket: ftpSocket);
   test('connection test', () async {
     await ftpSocket
         .connect(
@@ -31,6 +30,8 @@ void main() async {
     });
   });
 
+  final fs = FtpFileSystem(socket: ftpSocket);
+  await fs.init();
   test('directory operations test', () async {
     var ftpDirectory = FtpDirectory(
       path: '/test',
@@ -58,7 +59,8 @@ void main() async {
         host: config['active_host'],
         port: int.tryParse(config['active_port'].toString()),
       );
-      await fs.listDirectory();
+      final list = await fs.listDirectory();
+      list.forEach(print);
     });
 
   ftpSocket.transferMode = FtpTransferMode.passive;

@@ -198,7 +198,7 @@ abstract class DataParserUtils {
           ftpEntry = FtpLink(
             path: entry!.value.name,
             fs: fs,
-            linkTarget: '__unknown__',
+            linkTarget: '__unknown__${fs.hashCode ^ entry.value.hashCode}',
           );
           break;
       }

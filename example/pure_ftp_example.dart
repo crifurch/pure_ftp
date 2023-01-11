@@ -7,7 +7,7 @@ import 'package:pure_ftp/src/ftp/ftp_socket.dart';
 import 'package:yaml/yaml.dart';
 
 void main() async {
-  var configFile = File('test_connection.yml');
+  var configFile = File('test_connection2.yml');
   if (!configFile.existsSync()) {
     configFile = File('default_connection.yml');
   }
@@ -29,6 +29,8 @@ void main() async {
   });
 
   final fs = FtpFileSystem(socket: ftpSocket);
+
+  await fs.init();
 
   await _getDirList(fs);
 

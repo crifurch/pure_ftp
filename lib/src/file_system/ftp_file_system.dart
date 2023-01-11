@@ -5,6 +5,7 @@ import 'package:pure_ftp/src/file_system/entries/ftp_file.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_link.dart';
 import 'package:pure_ftp/src/file_system/ftp_entry.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
+import 'package:pure_ftp/src/ftp/extensions/string_find_extension.dart';
 import 'package:pure_ftp/src/ftp/ftp_commands.dart';
 import 'package:pure_ftp/src/ftp/ftp_socket.dart';
 import 'package:pure_ftp/src/ftp/utils/data_parser_utils.dart';
@@ -19,6 +20,17 @@ class FtpFileSystem {
     required FtpSocket socket,
   }) : _socket = socket {
     _currentDirectory = rootDirectory;
+  }
+
+  Future<void> init() async {
+    final response = await FtpCommand.PWD.writeAndRead(_socket);
+    if (response.isSuccessful) {
+      final path = response.message.find('"', '"');
+      _currentDirectory = FtpDirectory(
+        path: path,
+        fs: this,
+      );
+    }
   }
 
   bool isRoot(FtpDirectory directory) => directory.path == _rootPath;
@@ -38,7 +50,9 @@ class FtpFileSystem {
     try {
       testResult = await changeDirectory(path);
     } finally {
-      await changeDirectory(currentPath);
+      if (testResult) {
+        await changeDirectory(currentPath);
+      }
     }
     return testResult;
   }
