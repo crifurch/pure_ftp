@@ -14,6 +14,10 @@ import 'package:pure_ftp/src/socket/common/host_server.dart';
 import 'package:pure_ftp/src/socket/common/web_io_network_address.dart';
 
 typedef LogCallback = void Function(dynamic message);
+typedef TransferChannelCallback<T> = FutureOr<T> Function(
+    FutureOr<ClientSocket> socketFuture, LogCallback? log);
+typedef TransferFailCallback = FutureOr<void> Function(
+    Object error, StackTrace stackTrace);
 
 class FtpSocket {
   final String _host;
@@ -207,9 +211,9 @@ class FtpSocket {
   }
 
   Future<T> openTransferChannel<T>(
-    FutureOr<T> Function(FutureOr<ClientSocket> socket, LogCallback? log)
-        doStuff,
-  ) async {
+    TransferChannelCallback doStuff, [
+    TransferFailCallback? onFail,
+  ]) async {
     if (transferMode == FtpTransferMode.passive) {
       final passiveCommand = supportIPv6 ? FtpCommand.EPSV : FtpCommand.PASV;
       final ftpResponse = await passiveCommand.writeAndRead(this);
@@ -222,6 +226,11 @@ class FtpSocket {
       T result;
       try {
         result = await doStuff(dataSocket, _log);
+      } catch (e, s) {
+        if (onFail != null) {
+          await onFail(e, s);
+        }
+        rethrow;
       } finally {
         await dataSocket.close(ClientSocketDirection.readWrite);
       }
@@ -248,6 +257,11 @@ class FtpSocket {
     T result;
     try {
       result = await doStuff(server.firstSocket.timeout(_timeout), _log);
+    } catch (e, s) {
+      if (onFail != null) {
+        await onFail(e, s);
+      }
+      rethrow;
     } finally {
       await server.close();
     }
