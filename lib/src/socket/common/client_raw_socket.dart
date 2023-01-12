@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:pure_ftp/src/socket/common/client_socket_direction.dart';
 import 'package:pure_ftp/src/socket/html/client_raw_socket.dart'
-    if (dart.io) 'package:pure_ftp/src/socket/io/client_raw_socket.dart';
+    if (dart.library.io) 'package:pure_ftp/src/socket/io/client_raw_socket.dart';
 
 export 'package:pure_ftp/src/socket/common/client_socket_direction.dart';
 
