@@ -2,7 +2,6 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:pure_ftp/pure_ftp.dart';
@@ -78,7 +77,7 @@ class FtpSocket {
       }
       try {
         _socket = await _socket.secureSocket(ignoreCertificateErrors: true);
-      } on HandshakeException {
+      } on FtpException {
         if (!_securityType.isExplicit) {
           throw FtpException('Check if the server supports implicit FTPS'
               ' and that port $_port is correct(990 for FTPS)');
