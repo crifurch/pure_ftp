@@ -39,6 +39,10 @@ class ClientSocketImpl extends ClientSocket {
   }
 
   @override
+  Future<dynamic> addSteam(Stream<List<int>> stream) =>
+      _socket.addStream(stream);
+
+  @override
   StreamSubscription<Uint8List> listen(
     void Function(Uint8List event)? onData, {
     Function? onError,
@@ -51,4 +55,18 @@ class ClientSocketImpl extends ClientSocket {
         onDone: onDone,
         cancelOnError: cancelOnError,
       );
+
+  @override
+  void add(Uint8List data) {
+    _socket.add(data);
+  }
+
+  @override
+  Future<dynamic> get done => _socket.done;
+
+  @override
+  Future<bool> get isEmpty => _socket.isEmpty;
+
+  @override
+  Future<dynamic> get flush => _socket.flush();
 }

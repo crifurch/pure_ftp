@@ -15,6 +15,9 @@ class FtpResponse {
 
   bool get isSuccessful => _code >= 200 && _code < 300;
 
+  bool get isSuccessfulForDataTransfer =>
+      isSuccessful || _code == 125 || _code == 150;
+
   String get message => _message;
 
   @override

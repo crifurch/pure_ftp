@@ -14,8 +14,9 @@
 ## Package status
 
 ✅ FTP Connection</br>
-❌ Upload files to FTP</br>
-❌ Download files/directories from FTP</br>
+✅ Upload files to FTP</br>
+✅ Download files from FTP</br>
+❌ Download directories from FTP</br>
 ✅ List FTP directory contents</br>
 ❌ Manage FTP files (rename/delete)</br>
 ✅ Completely asynchronous functions</br>

@@ -24,6 +24,12 @@ class ClientSocketImpl extends ClientSocket {
   }
 
   @override
+  Future<dynamic> addSteam(Stream<List<int>> stream) {
+    // TODO: implement writeSteam
+    throw UnimplementedError();
+  }
+
+  @override
   StreamSubscription<Uint8List> listen(
     void Function(Uint8List event)? onData, {
     Function? onError,
@@ -31,6 +37,30 @@ class ClientSocketImpl extends ClientSocket {
     bool? cancelOnError,
   }) {
     // TODO: implement listen
+    throw UnimplementedError();
+  }
+
+  @override
+  void add(Uint8List data) {
+    // TODO: implement add
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<dynamic> get done {
+    // TODO: implement done
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<bool> get isEmpty {
+    // TODO: implement isEmpty
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<dynamic> get flush {
+    // TODO: implement flush
     throw UnimplementedError();
   }
 }

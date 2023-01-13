@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
 import 'package:pure_ftp/src/socket/common/client_raw_socket.dart';
 
 class ClientRawSocketImpl extends ClientRawSocket {
@@ -27,9 +28,13 @@ class ClientRawSocketImpl extends ClientRawSocket {
   @override
   Future<ClientRawSocket> secureSocket(
       {bool ignoreCertificateErrors = false}) async {
-    _socket = await RawSecureSocket.secure(_socket,
-        onBadCertificate: (_) => ignoreCertificateErrors);
-    _secure = true;
+    try {
+      _socket = await RawSecureSocket.secure(_socket,
+          onBadCertificate: (_) => ignoreCertificateErrors);
+      _secure = true;
+    } on HandshakeException {
+      throw FtpException('HandshakeException');
+    }
     return this;
   }
 

@@ -2,10 +2,10 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:pure_ftp/pure_ftp.dart';
+import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
 import 'package:pure_ftp/src/ftp/utils/data_parser_utils.dart';
 import 'package:pure_ftp/src/socket/common/client_raw_socket.dart';
@@ -14,6 +14,10 @@ import 'package:pure_ftp/src/socket/common/host_server.dart';
 import 'package:pure_ftp/src/socket/common/web_io_network_address.dart';
 
 typedef LogCallback = void Function(dynamic message);
+typedef TransferChannelCallback<T> = FutureOr<T> Function(
+    FutureOr<ClientSocket> socketFuture, LogCallback? log);
+typedef TransferFailCallback = FutureOr<void> Function(
+    Object error, StackTrace stackTrace);
 
 class FtpSocket {
   final String _host;
@@ -58,7 +62,7 @@ class FtpSocket {
         timeout: _timeout,
       );
     } catch (e) {
-      throw Exception('Could not connect to $_host ($_port):\n$e');
+      throw FtpException('Could not connect to $_host ($_port):\n$e');
     }
     _log?.call('Connected to $_host:$_port');
     // flush welcome message
@@ -70,16 +74,16 @@ class FtpSocket {
         if (!(await FtpCommand.AUTH.writeAndRead(this, ['TLS'])).isSuccessful) {
           if (!(await FtpCommand.AUTH.writeAndRead(this, ['SSL']))
               .isSuccessful) {
-            throw Exception(
+            throw FtpException(
                 'FTPES cannot be applied: the server refused both AUTH TLS and AUTH SSL commands');
           }
         }
       }
       try {
         _socket = await _socket.secureSocket(ignoreCertificateErrors: true);
-      } on HandshakeException {
+      } on FtpException {
         if (!_securityType.isExplicit) {
-          throw Exception('Check if the server supports implicit FTPS'
+          throw FtpException('Check if the server supports implicit FTPS'
               ' and that port $_port is correct(990 for FTPS)');
         } else {
           rethrow;
@@ -96,18 +100,18 @@ class FtpSocket {
     }
     if (ftpResponse.code == 332) {
       if (account == null) {
-        throw Exception('Account required');
+        throw FtpException('Account required');
       }
       ftpResponse = await FtpCommand.ACCT.writeAndRead(this, [account]);
       if (!ftpResponse.isSuccessful) {
-        throw Exception('Wrong Account');
+        throw FtpException('Wrong Account');
       }
     }
     if (!passwordRequired && !ftpResponse.isSuccessful) {
-      throw Exception('Wrong Username');
+      throw FtpException('Wrong Username');
     }
     if (!ftpResponse.isSuccessful) {
-      throw Exception('Wrong Username/password');
+      throw FtpException('Wrong Username/password');
     }
     await FtpCommand.TYPE.writeAndRead(this, [_transferType.type]);
     _log?.call('Logged in');
@@ -146,11 +150,11 @@ class FtpSocket {
       await Future.delayed(const Duration(milliseconds: 300));
       return true;
     }).timeout(_timeout, onTimeout: () {
-      throw Exception('Timeout reached for Receiving response!');
+      throw FtpException('Timeout reached for Receiving response!');
     });
     final result = res.toString().trimLeft();
     if (result.length < 3) {
-      throw Exception('Illegal Reply Exception');
+      throw FtpException('Illegal Reply Exception');
     }
     final lines = result.split('\n');
 
@@ -168,7 +172,7 @@ class FtpSocket {
     }
 
     if (code == -1) {
-      throw Exception('Illegal Reply Exception');
+      throw FtpException('Illegal Reply Exception');
     }
     _log?.call('$_host:$_port< $result');
     return FtpResponse(code: code, message: result);
@@ -206,24 +210,31 @@ class FtpSocket {
     _transferType = type;
   }
 
-  Future<void> openTransferChannel(
-    FutureOr Function(FutureOr<ClientSocket> socket, LogCallback? log) doStuff,
-  ) async {
+  Future<T> openTransferChannel<T>(
+    TransferChannelCallback doStuff, [
+    TransferFailCallback? onFail,
+  ]) async {
     if (transferMode == FtpTransferMode.passive) {
       final passiveCommand = supportIPv6 ? FtpCommand.EPSV : FtpCommand.PASV;
       final ftpResponse = await passiveCommand.writeAndRead(this);
       if (!ftpResponse.isSuccessful) {
-        throw Exception('Could not open transfer channel');
+        throw FtpException('Could not open transfer channel');
       }
       final port = DataParserUtils.parsePort(ftpResponse, isIPV6: supportIPv6);
       final ClientSocket dataSocket =
           await ClientSocket.connect(_host, port, timeout: _timeout);
+      T result;
       try {
-        await doStuff(dataSocket, _log);
+        result = await doStuff(dataSocket, _log);
+      } catch (e, s) {
+        if (onFail != null) {
+          await onFail(e, s);
+        }
+        rethrow;
       } finally {
         await dataSocket.close(ClientSocketDirection.readWrite);
       }
-      return;
+      return result;
     }
     //active mode
     final server = await HostServer.bind(WebIONetworkAddress.anyIPv4.host,
@@ -240,13 +251,21 @@ class FtpSocket {
     ]);
     if (!ftpResponse.isSuccessful) {
       await server.close();
-      throw Exception('Could not open transfer channel');
+      throw FtpException('Could not open transfer channel');
     }
+
+    T result;
     try {
-      await doStuff(server.firstSocket.timeout(_timeout), _log);
+      result = await doStuff(server.firstSocket.timeout(_timeout), _log);
+    } catch (e, s) {
+      if (onFail != null) {
+        await onFail(e, s);
+      }
+      rethrow;
     } finally {
       await server.close();
     }
+    return result;
   }
 }
 

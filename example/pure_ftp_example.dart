@@ -32,6 +32,8 @@ void main() async {
 
   await fs.init();
 
+  await fs.listDirectoryNames().then(print);
+
   await _getDirList(fs);
 
   try {

@@ -20,3 +20,10 @@
 ## 0.4.2
 
 - fix tests
+
+## 0.5.0
+
+- implements upload files to ftp server
+- implements download files from ftp server
+- implements create empty file on ftp server
+- fix compat with web

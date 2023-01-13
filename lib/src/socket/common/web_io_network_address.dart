@@ -1,5 +1,5 @@
-import 'package:pure_ftp/src/socket/io/network_address.dart'
-    if (dart.html) 'package:pure_ftp/src/socket/html/network_address.dart';
+import 'package:pure_ftp/src/socket/html/network_address.dart'
+    if (dart.library.io) 'package:pure_ftp/src/socket/io/network_address.dart';
 
 abstract class WebIONetworkAddress {
   static Future<List<WebIONetworkAddress>> lookup(String host) async =>
