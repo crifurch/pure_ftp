@@ -1,9 +1,12 @@
 // ignore_for_file: constant_identifier_names
 
+import 'dart:async';
+
 import 'package:pure_ftp/src/file_system/entries/ftp_directory.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_file.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_link.dart';
 import 'package:pure_ftp/src/file_system/ftp_entry.dart';
+import 'package:pure_ftp/src/file_system/ftp_transfer.dart';
 import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
 import 'package:pure_ftp/src/ftp/extensions/string_find_extension.dart';
@@ -14,6 +17,7 @@ import 'package:pure_ftp/src/ftp/utils/data_parser_utils.dart';
 class FtpFileSystem {
   final _rootPath = '/';
   final FtpSocket _socket;
+  late final FtpTransfer _transfer;
   late FtpDirectory _currentDirectory;
   ListType listType = ListType.LIST;
 
@@ -21,6 +25,7 @@ class FtpFileSystem {
     required FtpSocket socket,
   }) : _socket = socket {
     _currentDirectory = rootDirectory;
+    _transfer = FtpTransfer(socket: _socket);
   }
 
   Future<void> init() async {
@@ -111,8 +116,7 @@ class FtpFileSystem {
       final response = await _socket.read();
 
       // wait 125 || 150 and >200 that indicates the end of the transfer
-      final bool transferCompleted =
-          response.isSuccessful || response.code == 125 || response.code == 150;
+      final bool transferCompleted = response.isSuccessfulForDataTransfer;
       if (!transferCompleted) {
         if (response.code == 500 && listType == ListType.MLSD) {
           throw FtpException('MLSD command not supported by server');
@@ -162,7 +166,7 @@ class FtpFileSystem {
         final response = await _socket.read();
 
         // wait 125 || 150 and >200 that indicates the end of the transfer
-        final bool transferCompleted = response.isSuccessful;
+        final bool transferCompleted = response.isSuccessfulForDataTransfer;
         if (!transferCompleted) {
           throw FtpException('Error while listing directory names');
         }
@@ -176,6 +180,43 @@ class FtpFileSystem {
             .where((element) => element.isNotEmpty)
             .toList();
       });
+
+  Stream<List<int>> downloadFileStream(FtpFile file) =>
+      _transfer.downloadFileStream(file);
+
+  Future<List<int>> downloadFile(FtpFile file) async {
+    final result = <int>[];
+    await downloadFileStream(file).listen(result.addAll).asFuture();
+    return result;
+  }
+
+  Future<bool> uploadFile(FtpFile file, List<int> data,
+      [UploadChunkSize chunkSize = UploadChunkSize.kb4]) async {
+    final stream = StreamController<List<int>>();
+    var result = false;
+    try {
+      final future = uploadFileFromStream(file, stream.stream);
+      if (data.isEmpty) {
+        stream.add(data);
+      } else {
+        for (var i = 0; i < data.length; i += chunkSize.value) {
+          final end = i + chunkSize.value;
+          final chunk = data.sublist(i, end > data.length ? data.length : end);
+          stream.add(chunk);
+        }
+      }
+      await stream.close();
+      result = await future;
+    } finally {
+      await stream.close();
+    }
+    return result;
+  }
+
+  Future<bool> uploadFileFromStream(
+      FtpFile file, Stream<List<int>> stream) async {
+    return _transfer.uploadFileStream(file, stream);
+  }
 }
 
 enum ListType {
@@ -186,4 +227,21 @@ enum ListType {
   final FtpCommand command;
 
   const ListType(this.command);
+}
+
+enum UploadChunkSize {
+  kb1(1024),
+  kb2(2048),
+  kb4(4096),
+  mb1(1024 * 1024),
+  mb2(2 * 1024 * 1024),
+  mb4(4 * 1024 * 1024),
+  ;
+
+  final int value;
+
+  const UploadChunkSize(this.value);
+
+  @override
+  String toString() => 'UploadChunkSize(${value}b)';
 }

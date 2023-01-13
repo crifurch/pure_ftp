@@ -28,8 +28,7 @@ class FtpFile extends FtpEntry {
         throw FtpException('Parent directory does not exist');
       }
     }
-    // TODO: implement create
-    throw UnimplementedError();
+    return _fs.uploadFile(this, []);
   }
 
   @override

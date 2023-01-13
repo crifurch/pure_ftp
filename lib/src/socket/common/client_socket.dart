@@ -22,11 +22,23 @@ abstract class ClientSocket {
     bool? cancelOnError,
   });
 
+  void add(Uint8List data);
+
   void write(
     List<int> data, [
     int offset = 0,
     int? count,
   ]);
 
+  Future<dynamic> addSteam(Stream<List<int>> stream);
+
   Future<void> close(ClientSocketDirection how);
+
+  Future<dynamic> get done;
+
+  Future<bool> get isEmpty;
+
+  Future<bool> get isNotEmpty => isEmpty.then((value) => !value);
+
+  Future<dynamic> get flush;
 }
