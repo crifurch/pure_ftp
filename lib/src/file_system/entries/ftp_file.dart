@@ -14,8 +14,13 @@ class FtpFile extends FtpEntry {
   }) : _fs = fs;
 
   @override
-  Future<bool> copy(String newPath) {
-    // TODO: implement copy
+  Future<bool> copy(String newPath) async {
+    if (path == newPath) {
+      return true;
+    }
+    if (!await exists()) {
+      throw FtpException('File does not exist');
+    }
     throw UnimplementedError();
   }
 
@@ -44,8 +49,7 @@ class FtpFile extends FtpEntry {
   }
 
   @override
-  // TODO: implement isDirectory
-  bool get isDirectory => throw UnimplementedError();
+  bool get isDirectory => false;
 
   @override
   Future<FtpFile> move(String newPath) async {

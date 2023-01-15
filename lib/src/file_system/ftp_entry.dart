@@ -21,6 +21,8 @@ abstract class FtpEntry {
 
   String get name => path.split('/').last;
 
+  bool get isAbsolute => path.startsWith('/');
+
   bool get isDirectory;
 
   bool get isFile => !isDirectory;

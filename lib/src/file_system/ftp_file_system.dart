@@ -15,7 +15,7 @@ import 'package:pure_ftp/src/ftp/ftp_socket.dart';
 import 'package:pure_ftp/src/ftp/utils/data_parser_utils.dart';
 
 class FtpFileSystem {
-  final _rootPath = '/';
+  var _rootPath = '/';
   final FtpSocket _socket;
   late final FtpTransfer _transfer;
   late FtpDirectory _currentDirectory;
@@ -36,6 +36,7 @@ class FtpFileSystem {
         path: path,
         fs: this,
       );
+      _rootPath = path;
     }
   }
 
@@ -216,6 +217,14 @@ class FtpFileSystem {
   Future<bool> uploadFileFromStream(
       FtpFile file, Stream<List<int>> stream) async {
     return _transfer.uploadFileStream(file, stream);
+  }
+
+  FtpFileSystem copy() {
+    final ftpFileSystem = FtpFileSystem(socket: socket.copy());
+    ftpFileSystem._currentDirectory = _currentDirectory;
+    ftpFileSystem._rootPath = _rootPath;
+    ftpFileSystem.listType = listType;
+    return ftpFileSystem;
   }
 }
 

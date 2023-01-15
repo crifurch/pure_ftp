@@ -267,6 +267,17 @@ class FtpSocket {
     }
     return result;
   }
+
+  FtpSocket copy() => FtpSocket(
+        host: _host,
+        port: _port,
+        timeout: _timeout,
+        transferMode: transferMode,
+        transferType: transferType,
+        log: _log,
+        supportIPv6: supportIPv6,
+        securityType: _securityType,
+      );
 }
 
 class FtpTransferMode {
