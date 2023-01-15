@@ -4,16 +4,18 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:pure_ftp/pure_ftp.dart';
+import 'package:meta/meta.dart';
 import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
+import 'package:pure_ftp/src/ftp/ftp_commands.dart';
+import 'package:pure_ftp/src/ftp/ftp_response.dart';
 import 'package:pure_ftp/src/ftp/utils/data_parser_utils.dart';
+import 'package:pure_ftp/src/ftp_client.dart';
 import 'package:pure_ftp/src/socket/common/client_raw_socket.dart';
 import 'package:pure_ftp/src/socket/common/client_socket.dart';
 import 'package:pure_ftp/src/socket/common/host_server.dart';
 import 'package:pure_ftp/src/socket/common/web_io_network_address.dart';
 
-typedef LogCallback = void Function(dynamic message);
 typedef TransferChannelCallback<T> = FutureOr<T> Function(
     FutureOr<ClientSocket> socketFuture, LogCallback? log);
 typedef TransferFailCallback = FutureOr<void> Function(
@@ -32,22 +34,17 @@ class FtpSocket {
   late ClientRawSocket _socket;
 
   FtpSocket({
-    required String host,
-    int? port,
-    Duration timeout = const Duration(seconds: 30),
-    LogCallback? log,
-    FtpTransferMode transferMode = FtpTransferMode.passive,
-    FtpTransferType transferType = FtpTransferType.auto,
-    SecurityType securityType = SecurityType.FTP,
-    bool supportIPv6 = false,
-  })  : _host = host,
-        _port = securityType == SecurityType.FTPS ? port ?? 990 : port ?? 21,
-        _timeout = timeout,
-        _log = log,
-        transferMode = transferMode,
-        _transferType = transferType,
-        _securityType = securityType,
-        supportIPv6 = supportIPv6;
+    required FtpSocketInitOptions options,
+    LogCallback? logCallback,
+  })  : _host = options.host,
+        _port = options.port ??
+            (options.securityType == SecurityType.FTPS ? 990 : 21),
+        _timeout = options.timeout,
+        _log = logCallback,
+        transferMode = options.transferMode,
+        _transferType = options.transferType,
+        _securityType = options.securityType,
+        supportIPv6 = options.supportIPv6;
 
   /// Connect to the FTP Server with given credentials
   ///
@@ -269,14 +266,16 @@ class FtpSocket {
   }
 
   FtpSocket copy() => FtpSocket(
-        host: _host,
-        port: _port,
-        timeout: _timeout,
-        transferMode: transferMode,
-        transferType: transferType,
-        log: _log,
-        supportIPv6: supportIPv6,
-        securityType: _securityType,
+        options: FtpSocketInitOptions(
+          host: _host,
+          port: _port,
+          timeout: _timeout,
+          securityType: _securityType,
+          transferMode: transferMode,
+          transferType: transferType,
+          supportIPv6: supportIPv6,
+        ),
+        logCallback: _log,
       );
 }
 
@@ -319,4 +318,25 @@ enum SecurityType {
   bool get isSecure => this != SecurityType.FTP;
 
   bool get isExplicit => this == SecurityType.FTPES;
+}
+
+@immutable
+class FtpSocketInitOptions {
+  final String host;
+  final int? port;
+  final Duration timeout;
+  final SecurityType securityType;
+  final bool supportIPv6;
+  final FtpTransferMode transferMode;
+  final FtpTransferType transferType;
+
+  const FtpSocketInitOptions({
+    required this.host,
+    this.port,
+    this.timeout = const Duration(seconds: 30),
+    this.securityType = SecurityType.FTP,
+    this.supportIPv6 = false,
+    this.transferMode = FtpTransferMode.passive,
+    this.transferType = FtpTransferType.auto,
+  });
 }

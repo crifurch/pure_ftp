@@ -2,22 +2,22 @@ import 'package:meta/meta.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_directory.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_file.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_link.dart';
-import 'package:pure_ftp/src/file_system/ftp_file_system.dart';
+import 'package:pure_ftp/src/ftp_client.dart';
 
 @immutable
 abstract class FtpEntry {
   final String path;
   @protected
-  final FtpFileSystem _fs;
+  final FtpClient _client;
 
   const FtpEntry({
     required this.path,
-    required FtpFileSystem fs,
-  }) : _fs = fs;
+    required FtpClient client,
+  }) : _client = client;
 
   FtpDirectory get parent => FtpDirectory(
       path: path.split('/').sublist(0, path.split('/').length - 1).join('/'),
-      fs: _fs);
+      client: _client);
 
   String get name => path.split('/').last;
 
@@ -40,16 +40,19 @@ abstract class FtpEntry {
   Future<FtpEntry> move(String newPath);
 
   T as<T extends FtpEntry>() {
+    if (this is T) {
+      return this as T;
+    }
     switch (T) {
       case FtpDirectory:
-        return FtpDirectory(path: path, fs: _fs) as T;
+        return FtpDirectory(path: path, client: _client) as T;
       case FtpFile:
-        return FtpFile(path: path, fs: _fs) as T;
+        return FtpFile(path: path, client: _client) as T;
       case FtpLink:
         return FtpLink(
           path: path,
-          fs: _fs,
-          linkTarget: '__unknown__${path.hashCode ^ _fs.hashCode}',
+          client: _client,
+          linkTarget: '__unknown__${path.hashCode ^ _client.hashCode}',
         ) as T;
       default:
         throw UnsupportedError('Cannot cast to $T');

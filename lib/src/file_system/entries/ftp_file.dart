@@ -1,17 +1,19 @@
+import 'dart:async';
+
 import 'package:pure_ftp/src/extensions/ftp_directory_extensions.dart';
 import 'package:pure_ftp/src/file_system/ftp_entry.dart';
-import 'package:pure_ftp/src/file_system/ftp_file_system.dart';
 import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
 import 'package:pure_ftp/src/ftp/ftp_commands.dart';
+import 'package:pure_ftp/src/ftp_client.dart';
 
 class FtpFile extends FtpEntry {
-  final FtpFileSystem _fs;
+  final FtpClient _client;
 
   const FtpFile({
     required super.path,
-    required super.fs,
-  }) : _fs = fs;
+    required super.client,
+  }) : _client = client;
 
   @override
   Future<bool> copy(String newPath) async {
@@ -21,7 +23,28 @@ class FtpFile extends FtpEntry {
     if (!await exists()) {
       throw FtpException('File does not exist');
     }
-    throw UnimplementedError();
+    final fileTo = _client.getFile(newPath);
+    if (!await fileTo.parent.exists()) {
+      throw FtpException('Destination directory does not exist');
+    }
+    final secondClient = _client.clone();
+    await secondClient.connect();
+    await secondClient.socket.setTransferType(_client.socket.transferType);
+    secondClient.socket.transferMode = _client.socket.transferMode;
+    var result = false;
+    try {
+      final downloadFileStream = _client.fs.downloadFileStream(this);
+      final uploadStream =
+          secondClient.fs.uploadFileFromStream(fileTo, downloadFileStream);
+      result = await uploadStream;
+    } finally {
+      try {
+        await secondClient.disconnect();
+      } catch (e) {
+        //ignore
+      }
+    }
+    return result;
   }
 
   @override
@@ -33,18 +56,18 @@ class FtpFile extends FtpEntry {
         throw FtpException('Parent directory does not exist');
       }
     }
-    return _fs.uploadFile(this, []);
+    return _client.fs.uploadFile(this, []);
   }
 
   @override
   Future<bool> delete({bool recursive = false}) async {
-    final response = await FtpCommand.DELE.writeAndRead(_fs.socket, [path]);
+    final response = await FtpCommand.DELE.writeAndRead(_client.socket, [path]);
     return response.isSuccessful;
   }
 
   @override
   Future<bool> exists() async {
-    final response = await FtpCommand.SIZE.writeAndRead(_fs.socket, [path]);
+    final response = await FtpCommand.SIZE.writeAndRead(_client.socket, [path]);
     return response.isSuccessful;
   }
 
@@ -53,8 +76,8 @@ class FtpFile extends FtpEntry {
 
   @override
   Future<FtpFile> move(String newPath) async {
-    final newFile = newPath.startsWith(_fs.rootDirectory.path)
-        ? FtpFile(path: newPath, fs: _fs)
+    final newFile = newPath.startsWith(_client.fs.rootDirectory.path)
+        ? FtpFile(path: newPath, client: _client)
         : parent.getChildFile(newPath);
     if (newFile.path == path) {
       return this;
@@ -62,12 +85,12 @@ class FtpFile extends FtpEntry {
     if (!await newFile.parent.exists()) {
       throw FtpException('Parent directory of new file does not exist');
     }
-    final response = await FtpCommand.RNFR.writeAndRead(_fs.socket, [path]);
+    final response = await FtpCommand.RNFR.writeAndRead(_client.socket, [path]);
     if (!response.isSuccessful) {
       throw FtpException('Cannot move file');
     }
     final response2 =
-        await FtpCommand.RNTO.writeAndRead(_fs.socket, [newFile.path]);
+        await FtpCommand.RNTO.writeAndRead(_client.socket, [newFile.path]);
     if (!response2.isSuccessful) {
       throw FtpException('Cannot move file');
     }
@@ -86,12 +109,12 @@ class FtpFile extends FtpEntry {
     if (!await newFile.parent.exists()) {
       throw FtpException('Parent directory of new file does not exist');
     }
-    final response = await FtpCommand.RNFR.writeAndRead(_fs.socket, [path]);
+    final response = await FtpCommand.RNFR.writeAndRead(_client.socket, [path]);
     if (!response.isSuccessful) {
       throw FtpException('Cannot rename file');
     }
     final response2 =
-        await FtpCommand.RNTO.writeAndRead(_fs.socket, [newFile.path]);
+        await FtpCommand.RNTO.writeAndRead(_client.socket, [newFile.path]);
     if (!response2.isSuccessful) {
       throw FtpException('Cannot rename file');
     }
@@ -101,7 +124,7 @@ class FtpFile extends FtpEntry {
   FtpFile copyWith(String path) {
     return FtpFile(
       path: path,
-      fs: _fs,
+      client: _client,
     );
   }
 

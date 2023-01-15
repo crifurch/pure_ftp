@@ -1,16 +1,17 @@
-import 'package:pure_ftp/pure_ftp.dart';
+import 'package:pure_ftp/src/extensions/ftp_directory_extensions.dart';
 import 'package:pure_ftp/src/file_system/ftp_entry.dart';
-import 'package:pure_ftp/src/file_system/ftp_file_system.dart';
 import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
+import 'package:pure_ftp/src/ftp/ftp_commands.dart';
+import 'package:pure_ftp/src/ftp_client.dart';
 
 class FtpDirectory extends FtpEntry {
-  final FtpFileSystem _fs;
+  final FtpClient _client;
 
   const FtpDirectory({
     required super.path,
-    required super.fs,
-  }) : _fs = fs;
+    required super.client,
+  }) : _client = client;
 
   @override
   FtpDirectory get parent {
@@ -23,21 +24,22 @@ class FtpDirectory extends FtpEntry {
   @override
   bool get isDirectory => true;
 
-  bool get isRoot => _fs.isRoot(this);
+  bool get isRoot => _client.fs.isRoot(this);
 
   @override
   String get path => super.path.isEmpty ? '/' : super.path;
 
   @override
   Future<bool> exists() async {
-    final response = await FtpCommand.CWD.writeAndRead(_fs.socket, [path]);
-    await FtpCommand.CWD.writeAndRead(_fs.socket, [_fs.currentDirectory.path]);
+    final response = await FtpCommand.CWD.writeAndRead(_client.socket, [path]);
+    await FtpCommand.CWD
+        .writeAndRead(_client.socket, [_client.currentDirectory.path]);
     return response.isSuccessful;
   }
 
   @override
   Future<bool> create({bool recursive = false}) async {
-    final response = await FtpCommand.MKD.writeAndRead(_fs.socket, [path]);
+    final response = await FtpCommand.MKD.writeAndRead(_client.socket, [path]);
     return response.isSuccessful || response.code == 550;
   }
 
@@ -46,7 +48,7 @@ class FtpDirectory extends FtpEntry {
     if (!await exists()) {
       return true;
     }
-    final response = await FtpCommand.RMD.writeAndRead(_fs.socket, [path]);
+    final response = await FtpCommand.RMD.writeAndRead(_client.socket, [path]);
     //todo remove recursive if is not empty
     return response.isSuccessful;
   }
@@ -62,23 +64,19 @@ class FtpDirectory extends FtpEntry {
     if (!await exists()) {
       throw FtpException('Directory does not exist');
     }
-    var response = await FtpCommand.RNFR.writeAndRead(_fs.socket, [path]);
+    var response = await FtpCommand.RNFR.writeAndRead(_client.socket, [path]);
     if (response.code != 350) {
       throw FtpException('Could not rename directory');
     }
 
-    var newPath = '${parent.path}/$newName';
-    //todo search another way
-    if (newPath.startsWith('//')) {
-      newPath = newPath.substring(1);
-    }
-    response = await FtpCommand.RNTO.writeAndRead(_fs.socket, [
+    final newPath = parent.getChildDir(newName).path;
+    response = await FtpCommand.RNTO.writeAndRead(_client.socket, [
       newPath,
     ]);
     if (!response.isSuccessful) {
       throw FtpException('Could not rename directory');
     }
-    return FtpDirectory(path: newPath, fs: _fs);
+    return FtpDirectory(path: newPath, client: _client);
   }
 
   @override
@@ -102,21 +100,21 @@ class FtpDirectory extends FtpEntry {
       throw FtpException(
           'New path must be absolute, to rename use rename(new name)');
     }
-    final newDirectory = FtpDirectory(path: newPath, fs: _fs).parent;
+    final newDirectory = FtpDirectory(path: newPath, client: _client).parent;
     if (!await newDirectory.exists()) {
       throw FtpException('directory does not exist: ${newDirectory.path}');
     }
-    var response = await FtpCommand.RNFR.writeAndRead(_fs.socket, [path]);
+    var response = await FtpCommand.RNFR.writeAndRead(_client.socket, [path]);
     if (response.code != 350) {
       throw FtpException('Could not move directory');
     }
-    response = await FtpCommand.RNTO.writeAndRead(_fs.socket, [
+    response = await FtpCommand.RNTO.writeAndRead(_client.socket, [
       newPath,
     ]);
     if (!response.isSuccessful) {
       throw FtpException('Could not move directory');
     }
-    return FtpDirectory(path: newPath, fs: _fs);
+    return FtpDirectory(path: newPath, client: _client);
   }
 
   @override
@@ -124,16 +122,22 @@ class FtpDirectory extends FtpEntry {
     if (identical(this, other)) {
       return true;
     }
-    return other is FtpDirectory && other.path == path && other._fs == _fs;
+    return other is FtpDirectory &&
+        other.path == path &&
+        other._client == _client;
   }
 
   @override
-  int get hashCode => path.hashCode ^ _fs.hashCode;
+  int get hashCode => path.hashCode ^ _client.hashCode;
+
+  Future<List<FtpEntry>> list() => _client.fs.listDirectory(this);
+
+  Future<List<String>> listNames() => _client.fs.listDirectoryNames(this);
 
   FtpDirectory copyWith(String path) {
     return FtpDirectory(
       path: path,
-      fs: _fs,
+      client: _client,
     );
   }
 

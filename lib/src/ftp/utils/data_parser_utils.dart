@@ -1,5 +1,5 @@
+import 'package:pure_ftp/src/extensions/ftp_directory_extensions.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_directory.dart';
-import 'package:pure_ftp/src/file_system/entries/ftp_file.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_link.dart';
 import 'package:pure_ftp/src/file_system/ftp_entry.dart';
 import 'package:pure_ftp/src/file_system/ftp_entry_info.dart';
@@ -13,8 +13,7 @@ abstract class DataParserUtils {
   /// port format (|||xxxxx|) if [isIPV6] is true
   ///
   /// format 227 Entering Passive Mode (192,168,8,36,8,75) if [isIPV6] is false
-  static int parsePort(
-    FtpResponse response, {
+  static int parsePort(FtpResponse response, {
     required bool isIPV6,
   }) {
     if (!response.isSuccessful) {
@@ -55,35 +54,36 @@ abstract class DataParserUtils {
   }
 
   static final RegExp _regexpLIST = RegExp(r''
-      r'^([\-ld])' // Directory flag [1]
-      r'([\-rwxs]{9})\s+' // Permissions [2]
-      r'(\d+)\s+' // Number of items [3]
-      r'(\w+)\s+' // File owner [4]
-      r'(\w+)\s+' // File group [5]
-      r'(\d+)\s+' // File size in bytes [6]
-      r'(\w{3}\s+\d{1,2}\s+(?:\d{1,2}:\d{1,2}|\d{4}))\s+' // date[7]
-      r'(.+)$' //entry name[8]
-      );
+  r'^([\-ld])' // Directory flag [1]
+  r'([\-rwxs]{9})\s+' // Permissions [2]
+  r'(\d+)\s+' // Number of items [3]
+  r'(\w+)\s+' // File owner [4]
+  r'(\w+)\s+' // File group [5]
+  r'(\d+)\s+' // File size in bytes [6]
+  r'(\w{3}\s+\d{1,2}\s+(?:\d{1,2}:\d{1,2}|\d{4}))\s+' // date[7]
+  r'(.+)$' //entry name[8]
+  );
 
   static final _regexpLISTSii = RegExp(r''
-      r'^(.{8}\s+.{7})\s+' //date[1]
-      r'(.{0,5})\s+' //type file or dir [2]
-      r'(\d{0,24})\s+' //size [3]
-      r'(.+)$' //entry name [4]
-      );
+  r'^(.{8}\s+.{7})\s+' //date[1]
+  r'(.{0,5})\s+' //type file or dir [2]
+  r'(\d{0,24})\s+' //size [3]
+  r'(.+)$' //entry name [4]
+  );
 
+  /// Parse the [response] from the LIST|MLSD command
   static Map<FtpEntry, FtpEntryInfo?> parseListDirResponse(
-      String response, ListType type, FtpFileSystem fs) {
+      String response, ListType type, FtpDirectory parent) {
     switch (type) {
       case ListType.LIST:
-        return _parseLISTResponse(response, fs);
+        return _parseLISTResponse(response, parent);
       case ListType.MLSD:
-        return _parseMLSDResponse(response, fs);
+        return _parseMLSDResponse(response, parent);
     }
   }
 
   static Map<FtpEntry, FtpEntryInfo?> _parseLISTResponse(
-      String response, FtpFileSystem fs) {
+      String response, FtpDirectory parent) {
     final result = <FtpEntry, FtpEntryInfo?>{};
     final lines =
         response.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty);
@@ -91,26 +91,26 @@ abstract class DataParserUtils {
       final MapEntry<String, FtpEntryInfo>? entry =
           _parseListServerEntry(line) ?? _parseSiiServerEntry(line);
       FtpEntry? ftpEntry;
+      final name = entry?.value.name ?? '';
       switch (entry?.key) {
         case 'd':
-          ftpEntry = FtpDirectory(path: entry!.value.name, fs: fs);
+          ftpEntry = parent.getChildDir(name);
           break;
         case '-':
-          ftpEntry = FtpFile(path: entry!.value.name, fs: fs);
+          ftpEntry = parent.getChildFile(name);
           break;
         case 'l':
           var linkTarget = '';
-          var linkName = entry!.value.name;
-          if (entry.value.name.contains(' -> ')) {
+          var linkName = name;
+          if (entry!.value.name.contains(' -> ')) {
             final split = entry.value.name.split(' -> ');
             linkTarget = split[1];
             linkName = split[0];
+          } else {
+            linkTarget = '__unknown__${DateTime.now().millisecondsSinceEpoch}';
           }
-          ftpEntry = FtpLink(
-            path: linkName,
-            fs: fs,
-            linkTarget: linkTarget,
-          );
+          ftpEntry = parent.getChildFile(linkName).as<FtpLink>();
+          ftpEntry = (ftpEntry as FtpLink).copyWith(ftpEntry.path, linkTarget);
           break;
       }
       if (ftpEntry != null) {
@@ -120,9 +120,7 @@ abstract class DataParserUtils {
     return result;
   }
 
-  static MapEntry<String, FtpEntryInfo>? _parseListServerEntry(
-    String line,
-  ) {
+  static MapEntry<String, FtpEntryInfo>? _parseListServerEntry(String line,) {
     final match = _regexpLIST.firstMatch(line);
     if (match == null) {
       return null;
@@ -181,25 +179,26 @@ abstract class DataParserUtils {
   }
 
   static Map<FtpEntry, FtpEntryInfo?> _parseMLSDResponse(
-      String response, FtpFileSystem fs) {
+      String response, FtpDirectory parent) {
     final lines =
         response.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty);
     final result = <FtpEntry, FtpEntryInfo?>{};
     for (final line in lines) {
       final entry = _parseMLSDServerEntry(line);
       FtpEntry? ftpEntry;
+      final name = entry?.value.name ?? '';
       switch (entry?.key) {
         case 'd':
-          ftpEntry = FtpDirectory(path: entry!.value.name, fs: fs);
+          ftpEntry = parent.getChildDir(name);
           break;
         case '-':
-          ftpEntry = FtpFile(path: entry!.value.name, fs: fs);
+          ftpEntry = parent.getChildFile(name);
           break;
         case 'l':
-          ftpEntry = FtpLink(
-            path: entry!.value.name,
-            fs: fs,
-            linkTarget: '__unknown__${fs.hashCode ^ entry.value.hashCode}',
+          ftpEntry = parent.getChildFile(name).as<FtpLink>();
+          ftpEntry = (ftpEntry as FtpLink).copyWith(
+            ftpEntry.path,
+            '__unknown__${DateTime.now().millisecondsSinceEpoch}',
           );
           break;
       }
