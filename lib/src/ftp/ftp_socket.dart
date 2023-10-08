@@ -139,9 +139,8 @@ class FtpSocket {
   Future<FtpResponse> read() async {
     final res = StringBuffer();
     await Future.doWhile(() async {
-      final readMessage = _socket.readMessage();
-      if (readMessage != null && readMessage.isNotEmpty) {
-        res.write(String.fromCharCodes(readMessage).trim());
+      if (_socket.available() > 0) {
+        res.write(String.fromCharCodes(_socket.readMessage()!.toList()).trim());
         return false;
       }
       await Future.delayed(const Duration(milliseconds: 300));

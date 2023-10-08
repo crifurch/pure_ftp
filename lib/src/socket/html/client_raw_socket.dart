@@ -18,8 +18,7 @@ class ClientRawSocketImpl extends ClientRawSocket {
   }
 
   @override
-  Future<ClientRawSocket> secureSocket(
-      {bool ignoreCertificateErrors = false}) async {
+  Future<ClientRawSocket> secureSocket({bool ignoreCertificateErrors = false}) async {
     throw UnimplementedError();
   }
 
@@ -30,6 +29,11 @@ class ClientRawSocketImpl extends ClientRawSocket {
 
   @override
   Future<void> shutdown(ClientSocketDirection how) {
+    throw UnimplementedError();
+  }
+
+  @override
+  int available() {
     throw UnimplementedError();
   }
 }

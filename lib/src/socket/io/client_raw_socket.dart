@@ -6,7 +6,6 @@ import 'package:pure_ftp/src/socket/common/client_raw_socket.dart';
 
 class ClientRawSocketImpl extends ClientRawSocket {
   late RawSocket _socket;
-  bool _secure = false;
 
   @override
   Future<void> close() => _socket.close();
@@ -17,8 +16,7 @@ class ClientRawSocketImpl extends ClientRawSocket {
 
   @override
   List<int>? readMessage([int? length]) {
-    final read =
-        _secure ? _socket.read(length) : _socket.readMessage(length)?.data;
+    final read = _socket.read(length);
     if (read == null) {
       return null;
     }
@@ -31,7 +29,6 @@ class ClientRawSocketImpl extends ClientRawSocket {
     try {
       _socket = await RawSecureSocket.secure(_socket,
           onBadCertificate: (_) => ignoreCertificateErrors);
-      _secure = true;
     } on HandshakeException {
       throw FtpException('HandshakeException');
     }
@@ -45,6 +42,11 @@ class ClientRawSocketImpl extends ClientRawSocket {
   @override
   Future<void> shutdown(ClientSocketDirection how) async =>
       _socket.shutdown(how.toPlatform);
+
+  @override
+  int available() {
+    return _socket.available();
+  }
 }
 
 extension _MapDirection on ClientSocketDirection {
