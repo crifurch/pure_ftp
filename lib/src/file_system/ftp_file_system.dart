@@ -243,8 +243,8 @@ class FtpFileSystem {
       }
     }
     final dir = entry.parent;
-    final entries = await listDirectory(directory: dir);
     //todo: finish it
+    // final entries = await listDirectory(directory: dir);
     throw UnimplementedError();
   }
 
