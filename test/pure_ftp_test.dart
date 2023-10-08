@@ -1,8 +1,7 @@
 import 'dart:io';
 
-import 'package:pure_ftp/pure_ftp.dart';
-import 'package:pure_ftp/src/file_system/entries/ftp_directory.dart';
-import 'package:pure_ftp/src/file_system/ftp_file_system.dart';
+import 'package:pure_ftp/src/ftp/ftp_socket.dart';
+import 'package:pure_ftp/src/ftp_client.dart';
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
@@ -12,31 +11,23 @@ void main() async {
     configFile = File('default_connection.yml');
   }
   final config = loadYaml(await configFile.readAsString());
-  final ftpSocket = FtpSocket(
-    host: config['host'],
-    port: config['port'],
-    timeout: const Duration(seconds: 30),
-    log: print,
-  );
-  final fs = FtpFileSystem(socket: ftpSocket);
-  test('connection test', () async {
-    await ftpSocket
-        .connect(
-      config['username'],
-      config['password'],
+  final client = FtpClient(
+    socketInitOptions: FtpSocketInitOptions(
+      host: config['host'],
+      port: config['port'],
+    ),
+    authOptions: FtpAuthOptions(
+      username: config['username'],
+      password: config['password'],
       account: config['account'],
-    )
-        .then((value) {
-      print('Connected');
-    });
-    await fs.init();
+    ),
+  );
+  test('connection test', () async {
+    await client.connect();
   });
 
   test('directory operations test', () async {
-    var ftpDirectory = FtpDirectory(
-      path: '/test',
-      fs: fs,
-    );
+    var ftpDirectory = client.getDirectory('test');
     var boolResponse = await ftpDirectory.create();
     expect(boolResponse, true);
     var dirResponse = await ftpDirectory.rename('test1');
@@ -49,23 +40,23 @@ void main() async {
   });
 
   test('file system test', () async {
-    final result = await fs.listDirectory();
+    final result = await client.currentDirectory.list();
     result.forEach(print);
   });
 
   if (config['active_host'] != null)
     test('file system test in active mode', () async {
-      ftpSocket.transferMode = FtpTransferMode.active(
+      client.socket.transferMode = FtpTransferMode.active(
         host: config['active_host'],
         port: int.tryParse(config['active_port'].toString()),
       );
-      final list = await fs.listDirectory();
-      list.forEach(print);
+      final result = await client.currentDirectory.list();
+      result.forEach(print);
     });
 
-  ftpSocket.transferMode = FtpTransferMode.passive;
+  client.socket.transferMode = FtpTransferMode.passive;
 
   test('disconnect test', () async {
-    await ftpSocket.disconnect();
+    await client.disconnect();
   });
 }

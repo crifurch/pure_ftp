@@ -1,18 +1,18 @@
 import 'package:pure_ftp/src/file_system/entries/ftp_directory.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_file.dart';
 import 'package:pure_ftp/src/file_system/ftp_entry.dart';
-import 'package:pure_ftp/src/file_system/ftp_file_system.dart';
+import 'package:pure_ftp/src/ftp_client.dart';
 
 class FtpLink extends FtpEntry {
   final String _linkTarget;
-  final FtpFileSystem _fs;
+  final FtpClient _client;
 
   const FtpLink({
     required String linkTarget,
     required super.path,
-    required super.fs,
+    required super.client,
   })  : _linkTarget = linkTarget,
-        _fs = fs;
+        _client = client;
 
   @override
   Future<bool> copy(String newPath) {
@@ -56,11 +56,11 @@ class FtpLink extends FtpEntry {
   String get linkTargetPath => _linkTarget;
 
   Future<FtpEntry> get linkTarget async {
-    final isDir = await _fs.testDirectory(_linkTarget);
+    final isDir = await _client.fs.testDirectory(_linkTarget);
     if (isDir) {
-      return FtpDirectory(path: _linkTarget, fs: _fs);
+      return FtpDirectory(path: _linkTarget, client: _client);
     } else {
-      return FtpFile(path: _linkTarget, fs: _fs);
+      return FtpFile(path: _linkTarget, client: _client);
     }
   }
 
@@ -68,7 +68,7 @@ class FtpLink extends FtpEntry {
     return FtpLink(
       path: path,
       linkTarget: linkTarget,
-      fs: _fs,
+      client: _client,
     );
   }
 

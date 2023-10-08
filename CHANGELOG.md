@@ -27,3 +27,8 @@
 - implements download files from ftp server
 - implements create empty file on ftp server
 - fix compat with web
+
+## 0.5.1
+
+- update example
+- add function to get size of file

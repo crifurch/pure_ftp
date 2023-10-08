@@ -6,48 +6,53 @@ import 'package:pure_ftp/src/file_system/entries/ftp_directory.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_file.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_link.dart';
 import 'package:pure_ftp/src/file_system/ftp_entry.dart';
+import 'package:pure_ftp/src/file_system/ftp_entry_info.dart';
 import 'package:pure_ftp/src/file_system/ftp_transfer.dart';
 import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
 import 'package:pure_ftp/src/ftp/extensions/string_find_extension.dart';
 import 'package:pure_ftp/src/ftp/ftp_commands.dart';
-import 'package:pure_ftp/src/ftp/ftp_socket.dart';
 import 'package:pure_ftp/src/ftp/utils/data_parser_utils.dart';
+import 'package:pure_ftp/src/ftp_client.dart';
+import 'package:pure_ftp/utils/list_utils.dart';
+
+typedef DirInfoCache
+    = MapEntry<String, Iterable<MapEntry<FtpEntry, FtpEntryInfo>>>;
 
 class FtpFileSystem {
-  final _rootPath = '/';
-  final FtpSocket _socket;
+  var _rootPath = '/';
+  final FtpClient _client;
   late final FtpTransfer _transfer;
   late FtpDirectory _currentDirectory;
   ListType listType = ListType.LIST;
+  final List<DirInfoCache> _dirInfoCache = [];
 
   FtpFileSystem({
-    required FtpSocket socket,
-  }) : _socket = socket {
+    required FtpClient client,
+  }) : _client = client {
     _currentDirectory = rootDirectory;
-    _transfer = FtpTransfer(socket: _socket);
+    _transfer = FtpTransfer(socket: _client.socket);
   }
 
   Future<void> init() async {
-    final response = await FtpCommand.PWD.writeAndRead(_socket);
+    final response = await FtpCommand.PWD.writeAndRead(_client.socket);
     if (response.isSuccessful) {
       final path = response.message.find('"', '"');
       _currentDirectory = FtpDirectory(
         path: path,
-        fs: this,
+        client: _client,
       );
+      _rootPath = path;
     }
   }
 
   bool isRoot(FtpDirectory directory) => directory.path == _rootPath;
 
-  FtpSocket get socket => _socket;
-
   FtpDirectory get currentDirectory => _currentDirectory;
 
   FtpDirectory get rootDirectory => FtpDirectory(
-        path: _rootPath,
-        fs: this,
+    path: _rootPath,
+        client: _client,
       );
 
   Future<bool> testDirectory(String path) async {
@@ -64,11 +69,14 @@ class FtpFileSystem {
   }
 
   Future<bool> changeDirectory(String path) async {
-    final response = await FtpCommand.CWD.writeAndRead(_socket, [path]);
+    if (path == '..') {
+      return await changeDirectoryUp();
+    }
+    final response = await FtpCommand.CWD.writeAndRead(_client.socket, [path]);
     if (response.isSuccessful) {
       _currentDirectory = FtpDirectory(
         path: path.startsWith(_rootPath) ? path : '$_rootPath$path',
-        fs: this,
+        client: _client,
       );
       return true;
     }
@@ -79,7 +87,7 @@ class FtpFileSystem {
     if (isRoot(_currentDirectory)) {
       return false;
     }
-    final response = await FtpCommand.CDUP.writeAndRead(_socket);
+    final response = await FtpCommand.CDUP.writeAndRead(_client.socket);
     if (response.isSuccessful) {
       _currentDirectory = _currentDirectory.parent;
       return true;
@@ -88,7 +96,8 @@ class FtpFileSystem {
   }
 
   Future<bool> changeDirectoryRoot() async {
-    final response = await FtpCommand.CWD.writeAndRead(_socket, [_rootPath]);
+    final response =
+        await FtpCommand.CWD.writeAndRead(_client.socket, [_rootPath]);
     if (response.isSuccessful) {
       _currentDirectory = rootDirectory;
       return true;
@@ -97,7 +106,7 @@ class FtpFileSystem {
   }
 
   Future<bool> changeDirectoryHome() async {
-    final response = await FtpCommand.CWD.writeAndRead(_socket, ['~']);
+    final response = await FtpCommand.CWD.writeAndRead(_client.socket, ['~']);
     if (response.isSuccessful) {
       _currentDirectory = rootDirectory;
       return true;
@@ -105,15 +114,19 @@ class FtpFileSystem {
     return false;
   }
 
-  Future<List<FtpEntry>> listDirectory([FtpDirectory? directory]) async {
+  Future<List<FtpEntry>> listDirectory({
+    FtpDirectory? directory,
+    ListType? override,
+  }) async {
+    final listType = override ?? this.listType;
     final dir = directory ?? _currentDirectory;
-    final result = await _socket
+    final result = await _client.socket
         .openTransferChannel<List<FtpEntry>>((socketFuture, log) async {
-      listType.command.write(_socket, [dir.path]);
+      listType.command.write(_client.socket, [dir.path]);
       //will be closed by the transfer channel
       // ignore: close_sinks
       final socket = await socketFuture;
-      final response = await _socket.read();
+      final response = await _client.socket.read();
 
       // wait 125 || 150 and >200 that indicates the end of the transfer
       final bool transferCompleted = response.isSuccessfulForDataTransfer;
@@ -128,7 +141,7 @@ class FtpFileSystem {
       final listData = String.fromCharCodes(data);
       log?.call(listData);
       final parseListDirResponse =
-          DataParserUtils.parseListDirResponse(listData, listType, this);
+          DataParserUtils.parseListDirResponse(listData, listType, dir);
       var mainPath = dir.path;
       if (mainPath.endsWith('/')) {
         mainPath = mainPath.substring(0, mainPath.length - 1);
@@ -149,21 +162,24 @@ class FtpFileSystem {
           throw FtpException('Unknown type');
         }
       });
+      _dirInfoCache
+          .add(MapEntry(mainPath, remappedEntries.entries.whereType()));
       return remappedEntries.keys.toList();
     });
     return result;
   }
 
   Future<List<String>> listDirectoryNames([FtpDirectory? directory]) =>
-      _socket.openTransferChannel<List<String>>((socketFuture, log) async {
+      _client.socket
+          .openTransferChannel<List<String>>((socketFuture, log) async {
         FtpCommand.NLST.write(
-          _socket,
+          _client.socket,
           [directory?.path ?? _currentDirectory.path],
         );
         //will be closed by the transfer channel
         // ignore: close_sinks
         final socket = await socketFuture;
-        final response = await _socket.read();
+        final response = await _client.socket.read();
 
         // wait 125 || 150 and >200 that indicates the end of the transfer
         final bool transferCompleted = response.isSuccessfulForDataTransfer;
@@ -213,9 +229,40 @@ class FtpFileSystem {
     return result;
   }
 
+  Future<FtpEntryInfo?> getEntryInfo(FtpEntry entry,
+      {bool fromCache = true}) async {
+    assert(
+        entry.path != rootDirectory.path, 'Cannot get info for root directory');
+    if (fromCache) {
+      final cached =
+          _dirInfoCache.firstWhereOrNull((e) => e.key == entry.parent.path);
+      if (cached != null) {
+        return cached.value
+            .firstWhereOrNull((e) => e.key.name == entry.name)!
+            .value;
+      }
+    }
+    final dir = entry.parent;
+    final entries = await listDirectory(directory: dir);
+    //todo: finish it
+    throw UnimplementedError();
+  }
+
   Future<bool> uploadFileFromStream(
       FtpFile file, Stream<List<int>> stream) async {
     return _transfer.uploadFileStream(file, stream);
+  }
+
+  FtpFileSystem copy() {
+    final ftpFileSystem = FtpFileSystem(client: _client.clone());
+    ftpFileSystem._currentDirectory = _currentDirectory;
+    ftpFileSystem._rootPath = _rootPath;
+    ftpFileSystem.listType = listType;
+    return ftpFileSystem;
+  }
+
+  void clearCache() {
+    _dirInfoCache.clear();
   }
 }
 

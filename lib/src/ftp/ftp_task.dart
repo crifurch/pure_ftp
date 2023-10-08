@@ -60,6 +60,15 @@ class FtpTask<T> {
     }
   }
 
+  Future<void> reset() async {
+    if (isCompleted) {
+      _status = TaskStatus.pending;
+      return;
+    } else {
+      throw StateError('Task is not completed');
+    }
+  }
+
   T get result {
     if (_status == TaskStatus.completed) {
       return _result;
