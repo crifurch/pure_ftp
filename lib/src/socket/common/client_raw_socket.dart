@@ -27,4 +27,6 @@ abstract class ClientRawSocket {
   Future<void> close();
 
   Future<void> shutdown(ClientSocketDirection how);
+
+  int available();
 }

@@ -32,3 +32,8 @@
 
 - update example
 - add function to get size of file
+
+
+## 0.5.2
+
+- fix timeout error on Windows
