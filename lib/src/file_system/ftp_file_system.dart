@@ -6,6 +6,7 @@ import 'package:pure_ftp/src/file_system/entries/ftp_directory.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_file.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_link.dart';
 import 'package:pure_ftp/src/file_system/ftp_entry.dart';
+import 'package:pure_ftp/src/file_system/ftp_entry_info.dart';
 import 'package:pure_ftp/src/file_system/ftp_transfer.dart';
 import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
@@ -13,6 +14,10 @@ import 'package:pure_ftp/src/ftp/extensions/string_find_extension.dart';
 import 'package:pure_ftp/src/ftp/ftp_commands.dart';
 import 'package:pure_ftp/src/ftp/utils/data_parser_utils.dart';
 import 'package:pure_ftp/src/ftp_client.dart';
+import 'package:pure_ftp/utils/list_utils.dart';
+
+typedef DirInfoCache
+    = MapEntry<String, Iterable<MapEntry<FtpEntry, FtpEntryInfo>>>;
 
 class FtpFileSystem {
   var _rootPath = '/';
@@ -20,6 +25,7 @@ class FtpFileSystem {
   late final FtpTransfer _transfer;
   late FtpDirectory _currentDirectory;
   ListType listType = ListType.LIST;
+  final List<DirInfoCache> _dirInfoCache = [];
 
   FtpFileSystem({
     required FtpClient client,
@@ -108,7 +114,11 @@ class FtpFileSystem {
     return false;
   }
 
-  Future<List<FtpEntry>> listDirectory([FtpDirectory? directory]) async {
+  Future<List<FtpEntry>> listDirectory({
+    FtpDirectory? directory,
+    ListType? override,
+  }) async {
+    final listType = override ?? this.listType;
     final dir = directory ?? _currentDirectory;
     final result = await _client.socket
         .openTransferChannel<List<FtpEntry>>((socketFuture, log) async {
@@ -152,6 +162,8 @@ class FtpFileSystem {
           throw FtpException('Unknown type');
         }
       });
+      _dirInfoCache
+          .add(MapEntry(mainPath, remappedEntries.entries.whereType()));
       return remappedEntries.keys.toList();
     });
     return result;
@@ -217,6 +229,25 @@ class FtpFileSystem {
     return result;
   }
 
+  Future<FtpEntryInfo?> getEntryInfo(FtpEntry entry,
+      {bool fromCache = true}) async {
+    assert(
+        entry.path != rootDirectory.path, 'Cannot get info for root directory');
+    if (fromCache) {
+      final cached =
+          _dirInfoCache.firstWhereOrNull((e) => e.key == entry.parent.path);
+      if (cached != null) {
+        return cached.value
+            .firstWhereOrNull((e) => e.key.name == entry.name)!
+            .value;
+      }
+    }
+    final dir = entry.parent;
+    final entries = await listDirectory(directory: dir);
+    //todo: finish it
+    throw UnimplementedError();
+  }
+
   Future<bool> uploadFileFromStream(
       FtpFile file, Stream<List<int>> stream) async {
     return _transfer.uploadFileStream(file, stream);
@@ -228,6 +259,10 @@ class FtpFileSystem {
     ftpFileSystem._rootPath = _rootPath;
     ftpFileSystem.listType = listType;
     return ftpFileSystem;
+  }
+
+  void clearCache() {
+    _dirInfoCache.clear();
   }
 }
 

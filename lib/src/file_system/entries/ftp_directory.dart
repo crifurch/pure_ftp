@@ -130,7 +130,7 @@ class FtpDirectory extends FtpEntry {
   @override
   int get hashCode => path.hashCode ^ _client.hashCode;
 
-  Future<List<FtpEntry>> list() => _client.fs.listDirectory(this);
+  Future<List<FtpEntry>> list() => _client.fs.listDirectory(directory: this);
 
   Future<List<String>> listNames() => _client.fs.listDirectoryNames(this);
 

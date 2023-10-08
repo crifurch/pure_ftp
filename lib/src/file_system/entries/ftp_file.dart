@@ -71,6 +71,14 @@ class FtpFile extends FtpEntry {
     return response.isSuccessful;
   }
 
+  Future<int> size() async {
+    final response = await FtpCommand.SIZE.writeAndRead(_client.socket, [path]);
+    if (!response.isSuccessful) {
+      return -1;
+    }
+    return int.parse(response.message.substring(4));
+  }
+
   @override
   bool get isDirectory => false;
 
