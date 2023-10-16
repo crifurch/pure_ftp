@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:pure_ftp/src/file_system/entries/ftp_file.dart';
+import 'package:pure_ftp/src/file_system/ftp_file_system.dart';
 import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
 import 'package:pure_ftp/src/ftp/ftp_commands.dart';
@@ -48,7 +49,8 @@ class FtpTransfer {
     return stream.stream;
   }
 
-  Future<bool> uploadFileStream(FtpFile file, Stream<List<int>> data) =>
+  Future<bool> uploadFileStream(FtpFile file, Stream<List<int>> data,
+          {OnSendProgress? onSendProgress}) =>
       _socket.openTransferChannel((socketFuture, log) async {
         FtpCommand.STOR.write(
           _socket,
@@ -69,7 +71,9 @@ class FtpTransfer {
           StreamTransformer.fromHandlers(
             handleData: (event, sink) {
               sink.add(Uint8List.fromList(event));
-              log?.call('Uploaded ${total += event.length} bytes');
+              total += event.length;
+              onSendProgress?.call(total);
+              log?.call('Uploaded ${total} bytes');
             },
           ),
         );

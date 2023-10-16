@@ -19,6 +19,8 @@ import 'package:pure_ftp/utils/list_utils.dart';
 typedef DirInfoCache
     = MapEntry<String, Iterable<MapEntry<FtpEntry, FtpEntryInfo>>>;
 
+typedef OnSendProgress = Function(int bytesSent);
+
 class FtpFileSystem {
   var _rootPath = '/';
   final FtpClient _client;
@@ -51,7 +53,7 @@ class FtpFileSystem {
   FtpDirectory get currentDirectory => _currentDirectory;
 
   FtpDirectory get rootDirectory => FtpDirectory(
-    path: _rootPath,
+        path: _rootPath,
         client: _client,
       );
 
@@ -207,11 +209,13 @@ class FtpFileSystem {
   }
 
   Future<bool> uploadFile(FtpFile file, List<int> data,
-      [UploadChunkSize chunkSize = UploadChunkSize.kb4]) async {
+      {UploadChunkSize chunkSize = UploadChunkSize.kb4,
+      OnSendProgress? onSendProgress}) async {
     final stream = StreamController<List<int>>();
     var result = false;
     try {
-      final future = uploadFileFromStream(file, stream.stream);
+      final future = uploadFileFromStream(file, stream.stream,
+          onSendProgress: onSendProgress);
       if (data.isEmpty) {
         stream.add(data);
       } else {
@@ -248,9 +252,10 @@ class FtpFileSystem {
     throw UnimplementedError();
   }
 
-  Future<bool> uploadFileFromStream(
-      FtpFile file, Stream<List<int>> stream) async {
-    return _transfer.uploadFileStream(file, stream);
+  Future<bool> uploadFileFromStream(FtpFile file, Stream<List<int>> stream,
+      {OnSendProgress? onSendProgress}) async {
+    return _transfer.uploadFileStream(file, stream,
+        onSendProgress: onSendProgress);
   }
 
   FtpFileSystem copy() {
