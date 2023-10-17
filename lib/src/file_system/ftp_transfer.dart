@@ -16,7 +16,8 @@ class FtpTransfer {
     required FtpSocket socket,
   }) : _socket = socket;
 
-  Stream<List<int>> downloadFileStream(FtpFile file) {
+  Stream<List<int>> downloadFileStream(FtpFile file,
+      {OnReceiveProgress? onReceiveProgress}) {
     final stream = StreamController<List<int>>();
     unawaited(_socket.openTransferChannel((socketFuture, log) async {
       FtpCommand.RETR.write(
@@ -37,7 +38,9 @@ class FtpTransfer {
       await socket.listen(
         (event) {
           stream.add(event);
-          log?.call('Downloaded ${total += event.length} bytes');
+          total += event.length;
+          onReceiveProgress?.call(total);
+          log?.call('Downloaded $total bytes');
         },
       ).asFuture();
       await _socket.read();

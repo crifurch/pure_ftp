@@ -20,6 +20,7 @@ typedef DirInfoCache
     = MapEntry<String, Iterable<MapEntry<FtpEntry, FtpEntryInfo>>>;
 
 typedef OnSendProgress = Function(int bytesSent);
+typedef OnReceiveProgress = Function(int bytesReceived);
 
 class FtpFileSystem {
   var _rootPath = '/';
@@ -199,12 +200,16 @@ class FtpFileSystem {
             .toList();
       });
 
-  Stream<List<int>> downloadFileStream(FtpFile file) =>
-      _transfer.downloadFileStream(file);
+  Stream<List<int>> downloadFileStream(FtpFile file,
+          {OnReceiveProgress? onReceiveProgress}) =>
+      _transfer.downloadFileStream(file, onReceiveProgress: onReceiveProgress);
 
-  Future<List<int>> downloadFile(FtpFile file) async {
+  Future<List<int>> downloadFile(FtpFile file,
+      {OnReceiveProgress? onReceiveProgress}) async {
     final result = <int>[];
-    await downloadFileStream(file).listen(result.addAll).asFuture();
+    await downloadFileStream(file, onReceiveProgress: onReceiveProgress)
+        .listen(result.addAll)
+        .asFuture();
     return result;
   }
 
