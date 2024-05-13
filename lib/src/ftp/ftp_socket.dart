@@ -122,7 +122,9 @@ class FtpSocket {
     _log?.call('Disconnecting from $_host:$_port');
     try {
       if (safe) {
-        await writeAndRead(FtpCommand.QUIT.toString());
+        await writeAndRead(FtpCommand.QUIT.toString()).timeout(
+          const Duration(seconds: 3),
+        );
       }
     } catch (_) {
       // ignore
@@ -160,24 +162,26 @@ class FtpSocket {
     }).timeout(_timeout, onTimeout: () {
       throw FtpException('Timeout reached for Receiving response!');
     });
-    final result = res.toString().trimLeft();
+    var result = res.toString().trimLeft();
     if (result.length < 3) {
       throw FtpException('Illegal Reply Exception');
     }
     final lines = result.split('\n');
-
-    if (lines.isNotEmpty && lines.last.length >= 4 && lines.last[3] == '-') {
-      return await read();
-    }
-
     var code = -1;
-    for (var i = lines.length - 1; i >= 0; i--) {
-      final line = lines[i];
-      if (line.length >= 3) {
-        code = int.tryParse(line.substring(0, 3)) ?? code;
-        break;
-      }
+    if (lines.isNotEmpty && lines.last.length >= 4 && lines.last[3] == '-') {
+      final ftpResponse = await read();
+      code = ftpResponse.code;
+      res.write(ftpResponse.message);
+      result = res.toString().trimLeft();
     }
+    if (code == -1)
+      for (var i = lines.length - 1; i >= 0; i--) {
+        final line = lines[i];
+        if (line.length >= 3) {
+          code = int.tryParse(line.substring(0, 3)) ?? code;
+          break;
+        }
+      }
 
     if (code == -1) {
       throw FtpException('Illegal Reply Exception');
