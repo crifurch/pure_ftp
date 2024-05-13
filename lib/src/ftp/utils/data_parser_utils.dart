@@ -13,7 +13,8 @@ abstract class DataParserUtils {
   /// port format (|||xxxxx|) if [isIPV6] is true
   ///
   /// format 227 Entering Passive Mode (192,168,8,36,8,75) if [isIPV6] is false
-  static int parsePort(FtpResponse response, {
+  static int parsePort(
+    FtpResponse response, {
     required bool isIPV6,
   }) {
     if (!response.isSuccessful) {
@@ -54,22 +55,22 @@ abstract class DataParserUtils {
   }
 
   static final RegExp _regexpLIST = RegExp(r''
-  r'^([\-ld])' // Directory flag [1]
-  r'([\-rwxs]{9})\s+' // Permissions [2]
-  r'(\d+)\s+' // Number of items [3]
-  r'(\w+)\s+' // File owner [4]
-  r'(\w+)\s+' // File group [5]
-  r'(\d+)\s+' // File size in bytes [6]
-  r'(\w{3}\s+\d{1,2}\s+(?:\d{1,2}:\d{1,2}|\d{4}))\s+' // date[7]
-  r'(.+)$' //entry name[8]
-  );
+      r'^([\-ld])' // Directory flag [1]
+      r'([\-rwxs]{9})\s+' // Permissions [2]
+      r'(\d+)\s+' // Number of items [3]
+      r'(\w+)\s+' // File owner [4]
+      r'(\w+)\s+' // File group [5]
+      r'(\d+)\s+' // File size in bytes [6]
+      r'(\w{3}\s+\d{1,2}\s+(?:\d{1,2}:\d{1,2}|\d{4}))\s+' // date[7]
+      r'(.+)$' //entry name[8]
+      );
 
   static final _regexpLISTSii = RegExp(r''
-  r'^(.{8}\s+.{7})\s+' //date[1]
-  r'(.{0,5})\s+' //type file or dir [2]
-  r'(\d{0,24})\s+' //size [3]
-  r'(.+)$' //entry name [4]
-  );
+      r'^(.{8}\s+.{7})\s+' //date[1]
+      r'(.{0,5})\s+' //type file or dir [2]
+      r'(\d{0,24})\s+' //size [3]
+      r'(.+)$' //entry name [4]
+      );
 
   /// Parse the [response] from the LIST|MLSD command
   static Map<FtpEntry, FtpEntryInfo?> parseListDirResponse(
@@ -120,7 +121,9 @@ abstract class DataParserUtils {
     return result;
   }
 
-  static MapEntry<String, FtpEntryInfo>? _parseListServerEntry(String line,) {
+  static MapEntry<String, FtpEntryInfo>? _parseListServerEntry(
+    String line,
+  ) {
     final match = _regexpLIST.firstMatch(line);
     if (match == null) {
       return null;

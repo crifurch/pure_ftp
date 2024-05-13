@@ -52,7 +52,7 @@ class FtpFileSystem {
   FtpDirectory get currentDirectory => _currentDirectory;
 
   FtpDirectory get rootDirectory => FtpDirectory(
-    path: _rootPath,
+        path: _rootPath,
         client: _client,
       );
 
