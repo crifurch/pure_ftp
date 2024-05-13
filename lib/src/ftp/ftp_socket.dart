@@ -133,6 +133,18 @@ class FtpSocket {
     }
   }
 
+  /// verify that socket is connected and server send response
+  Future<bool> isConnected() async {
+    try {
+      final res = await FtpCommand.NOOP
+          .writeAndRead(this)
+          .timeout(const Duration(seconds: 3));
+      return res.code == 200;
+    } on TimeoutException {
+      return false;
+    }
+  }
+
   /// Fetch the response from the server
   ///
   /// FtpSocket.timeout is the time to wait for the response
