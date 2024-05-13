@@ -2,7 +2,7 @@ import 'package:meta/meta.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_directory.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_file.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_link.dart';
-import 'package:pure_ftp/src/ftp_client.dart';
+import 'package:pure_ftp/src/main/ftp_client.dart';
 
 @immutable
 abstract class FtpEntry {

@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:pure_ftp/src/ftp/ftp_socket.dart';
-import 'package:pure_ftp/src/ftp_client.dart';
+import 'package:pure_ftp/src/main/ftp_client.dart';
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
