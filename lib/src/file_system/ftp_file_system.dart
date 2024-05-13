@@ -1,9 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:pure_ftp/src/file_system/entries/ftp_directory.dart';
+import 'package:pure_ftp/src/file_system/entries/ftp_entry.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_file.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_link.dart';
-import 'package:pure_ftp/src/file_system/ftp_entry.dart';
 import 'package:pure_ftp/src/file_system/ftp_entry_info.dart';
 import 'package:pure_ftp/src/file_system/ftp_transfer.dart';
 import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
@@ -17,8 +18,7 @@ import 'package:pure_ftp/utils/list_utils.dart';
 export 'package:pure_ftp/src/file_system/ftp_transfer.dart'
     show OnTransferProgress;
 
-typedef DirInfoCache
-    = MapEntry<String, Iterable<MapEntry<FtpEntry, FtpEntryInfo>>>;
+typedef DirInfoCache = MapEntry<String, Iterable<FtpEntry>>;
 
 class FtpFileSystem {
   var _rootPath = '/';
@@ -139,7 +139,7 @@ class FtpFileSystem {
       }
       final List<int> data = [];
       await socket.listen(data.addAll).asFuture();
-      final listData = String.fromCharCodes(data);
+      final listData = utf8.decode(data, allowMalformed: true);
       log?.call(listData);
       final parseListDirResponse =
           DataParserUtils.parseListDirResponse(listData, listType, dir);
@@ -147,25 +147,21 @@ class FtpFileSystem {
       if (mainPath.endsWith('/')) {
         mainPath = mainPath.substring(0, mainPath.length - 1);
       }
-      final remappedEntries = parseListDirResponse.map((e, v) {
+      final remappedEntries = parseListDirResponse.map((e) {
         if (e is FtpDirectory) {
-          return MapEntry(e.copyWith('${mainPath}/${e.name}'), v);
+          return e.copyWith(path: '${mainPath}/${e.name}');
         } else if (e is FtpFile) {
-          return MapEntry(e.copyWith('${mainPath}/${e.name}'), v);
+          return e.copyWith(path: '${mainPath}/${e.name}');
         } else if (e is FtpLink) {
-          return MapEntry(
-              e.copyWith(
-                '${mainPath}/${e.name}',
-                e.linkTargetPath,
-              ),
-              v);
+          return e.copyWith(
+            path: '${mainPath}/${e.name}',
+          );
         } else {
           throw FtpException('Unknown type');
         }
       });
-      _dirInfoCache
-          .add(MapEntry(mainPath, remappedEntries.entries.whereType()));
-      return remappedEntries.keys.toList();
+      _dirInfoCache.add(MapEntry(mainPath, remappedEntries.whereType()));
+      return remappedEntries.whereType().toList();
     });
     return result;
   }
@@ -267,15 +263,16 @@ class FtpFileSystem {
 
   Future<FtpEntryInfo?> getEntryInfo(FtpEntry entry,
       {bool fromCache = true}) async {
+    if (entry.info != null) {
+      return entry.info;
+    }
     assert(
         entry.path != rootDirectory.path, 'Cannot get info for root directory');
     if (fromCache) {
       final cached =
           _dirInfoCache.firstWhereOrNull((e) => e.key == entry.parent.path);
       if (cached != null) {
-        return cached.value
-            .firstWhereOrNull((e) => e.key.name == entry.name)!
-            .value;
+        return cached.value.firstWhereOrNull((e) => e.name == entry.name)!.info;
       }
     }
     //todo: finish it

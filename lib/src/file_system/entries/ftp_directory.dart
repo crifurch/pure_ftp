@@ -1,5 +1,6 @@
 import 'package:pure_ftp/src/extensions/ftp_directory_extensions.dart';
-import 'package:pure_ftp/src/file_system/ftp_entry.dart';
+import 'package:pure_ftp/src/file_system/entries/ftp_entry.dart';
+import 'package:pure_ftp/src/file_system/ftp_entry_info.dart';
 import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
 import 'package:pure_ftp/src/ftp/ftp_commands.dart';
@@ -11,6 +12,7 @@ class FtpDirectory extends FtpEntry {
   const FtpDirectory({
     required super.path,
     required super.client,
+    super.info,
   }) : _client = client;
 
   @override
@@ -134,9 +136,13 @@ class FtpDirectory extends FtpEntry {
 
   Future<List<String>> listNames() => _client.fs.listDirectoryNames(this);
 
-  FtpDirectory copyWith(String path) {
+  FtpDirectory copyWith({
+    String? path,
+    FtpEntryInfo? info,
+  }) {
     return FtpDirectory(
-      path: path,
+      path: path ?? this.path,
+      info: this.info ?? info,
       client: _client,
     );
   }
