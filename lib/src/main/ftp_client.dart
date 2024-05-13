@@ -8,7 +8,7 @@ import 'package:pure_ftp/src/file_system/entries/ftp_link.dart';
 import 'package:pure_ftp/src/file_system/ftp_file_system.dart';
 import 'package:pure_ftp/src/ftp/ftp_socket.dart';
 import 'package:pure_ftp/src/ftp/ftp_task.dart';
-import 'package:pure_ftp/src/task_manager_mixin.dart';
+import 'package:pure_ftp/src/main/task_manager_mixin.dart';
 
 typedef LogCallback = void Function(dynamic message);
 

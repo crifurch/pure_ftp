@@ -10,7 +10,7 @@ import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
 import 'package:pure_ftp/src/ftp/ftp_commands.dart';
 import 'package:pure_ftp/src/ftp/ftp_response.dart';
 import 'package:pure_ftp/src/ftp/utils/data_parser_utils.dart';
-import 'package:pure_ftp/src/ftp_client.dart';
+import 'package:pure_ftp/src/main/ftp_client.dart';
 import 'package:pure_ftp/src/socket/common/client_raw_socket.dart';
 import 'package:pure_ftp/src/socket/common/client_socket.dart';
 import 'package:pure_ftp/src/socket/common/host_server.dart';

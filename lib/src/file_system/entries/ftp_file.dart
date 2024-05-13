@@ -5,7 +5,7 @@ import 'package:pure_ftp/src/file_system/ftp_entry.dart';
 import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
 import 'package:pure_ftp/src/ftp/ftp_commands.dart';
-import 'package:pure_ftp/src/ftp_client.dart';
+import 'package:pure_ftp/src/main/ftp_client.dart';
 
 class FtpFile extends FtpEntry {
   final FtpClient _client;

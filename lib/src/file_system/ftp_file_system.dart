@@ -11,7 +11,7 @@ import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
 import 'package:pure_ftp/src/ftp/extensions/string_find_extension.dart';
 import 'package:pure_ftp/src/ftp/ftp_commands.dart';
 import 'package:pure_ftp/src/ftp/utils/data_parser_utils.dart';
-import 'package:pure_ftp/src/ftp_client.dart';
+import 'package:pure_ftp/src/main/ftp_client.dart';
 import 'package:pure_ftp/utils/list_utils.dart';
 
 export 'package:pure_ftp/src/file_system/ftp_transfer.dart'
