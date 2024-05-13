@@ -122,7 +122,9 @@ class FtpSocket {
     _log?.call('Disconnecting from $_host:$_port');
     try {
       if (safe) {
-        await writeAndRead(FtpCommand.QUIT.toString());
+        await writeAndRead(FtpCommand.QUIT.toString()).timeout(
+          const Duration(seconds: 3),
+        );
       }
     } catch (_) {
       // ignore
@@ -130,6 +132,18 @@ class FtpSocket {
       await _socket.close();
       await _socket.shutdown(ClientSocketDirection.readWrite);
       _log?.call('Disconnected from $_host:$_port');
+    }
+  }
+
+  /// verify that socket is connected and server send response
+  Future<bool> isConnected() async {
+    try {
+      final res = await FtpCommand.NOOP
+          .writeAndRead(this)
+          .timeout(const Duration(seconds: 3));
+      return res.code == 200;
+    } on TimeoutException {
+      return false;
     }
   }
 
@@ -148,29 +162,31 @@ class FtpSocket {
     }).timeout(_timeout, onTimeout: () {
       throw FtpException('Timeout reached for Receiving response!');
     });
-    final result = res.toString().trimLeft();
+    var result = res.toString().trimLeft();
     if (result.length < 3) {
       throw FtpException('Illegal Reply Exception');
     }
     final lines = result.split('\n');
-
-    if (lines.isNotEmpty && lines.last.length >= 4 && lines.last[3] == '-') {
-      return await read();
-    }
-
     var code = -1;
-    for (var i = lines.length - 1; i >= 0; i--) {
-      final line = lines[i];
-      if (line.length >= 3) {
-        code = int.tryParse(line.substring(0, 3)) ?? code;
-        break;
-      }
+    if (lines.isNotEmpty && lines.last.length >= 4 && lines.last[3] == '-') {
+      final ftpResponse = await read();
+      code = ftpResponse.code;
+      res.write(ftpResponse.message);
+      result = res.toString().trimLeft();
     }
+    if (code == -1)
+      for (var i = lines.length - 1; i >= 0; i--) {
+        final line = lines[i];
+        if (line.length >= 3) {
+          code = int.tryParse(line.substring(0, 3)) ?? code;
+          break;
+        }
+      }
 
     if (code == -1) {
       throw FtpException('Illegal Reply Exception');
     }
-    _log?.call('$_host:$_port< $result');
+    _log?.call('[${DateTime.now().toString()}] $_host:$_port< $result');
     return FtpResponse(code: code, message: result);
   }
 
@@ -181,9 +197,9 @@ class FtpSocket {
     _socket.write(utf8.encode('$message${command ? '\r\n' : ''}'));
     if (message.startsWith(FtpCommand.PASS.toString())) {
       _log?.call(
-          '$_host:$_port> ${message.substring(0, 5)}${'*' * (message.length - 4)}');
+          '[${DateTime.now().toString()}] $_host:$_port> ${message.substring(0, 5)}${'*' * (message.length - 4)}');
     } else {
-      _log?.call('$_host:$_port> $message');
+      _log?.call('[${DateTime.now().toString()}] $_host:$_port> $message');
     }
   }
 
@@ -206,31 +222,39 @@ class FtpSocket {
     _transferType = type;
   }
 
+  Future<T> _openTransferChannelPassive<T>(
+    TransferChannelCallback doStuff, [
+    TransferFailCallback? onFail,
+  ]) async {
+    final passiveCommand = supportIPv6 ? FtpCommand.EPSV : FtpCommand.PASV;
+    final ftpResponse = await passiveCommand.writeAndRead(this);
+    if (!ftpResponse.isSuccessful) {
+      throw FtpException(
+          'Could not open transfer channel: ${ftpResponse.message}');
+    }
+    final port = DataParserUtils.parsePort(ftpResponse, isIPV6: supportIPv6);
+    final ClientSocket dataSocket =
+        await ClientSocket.connect(_host, port, timeout: _timeout);
+    T result;
+    try {
+      result = await doStuff(dataSocket, _log);
+    } catch (e, s) {
+      if (onFail != null) {
+        await onFail(e, s);
+      }
+      rethrow;
+    } finally {
+      await dataSocket.close(ClientSocketDirection.readWrite);
+    }
+    return result;
+  }
+
   Future<T> openTransferChannel<T>(
     TransferChannelCallback doStuff, [
     TransferFailCallback? onFail,
   ]) async {
     if (transferMode == FtpTransferMode.passive) {
-      final passiveCommand = supportIPv6 ? FtpCommand.EPSV : FtpCommand.PASV;
-      final ftpResponse = await passiveCommand.writeAndRead(this);
-      if (!ftpResponse.isSuccessful) {
-        throw FtpException('Could not open transfer channel');
-      }
-      final port = DataParserUtils.parsePort(ftpResponse, isIPV6: supportIPv6);
-      final ClientSocket dataSocket =
-          await ClientSocket.connect(_host, port, timeout: _timeout);
-      T result;
-      try {
-        result = await doStuff(dataSocket, _log);
-      } catch (e, s) {
-        if (onFail != null) {
-          await onFail(e, s);
-        }
-        rethrow;
-      } finally {
-        await dataSocket.close(ClientSocketDirection.readWrite);
-      }
-      return result;
+      return _openTransferChannelPassive(doStuff, onFail);
     }
     //active mode
     final server = await HostServer.bind(WebIONetworkAddress.anyIPv4.host,
@@ -260,6 +284,12 @@ class FtpSocket {
       rethrow;
     } finally {
       await server.close();
+    }
+    try {
+      FtpCommand.ABOR.write(this);
+      await read();
+    } catch (e) {
+      _log?.call(e.toString());
     }
     return result;
   }

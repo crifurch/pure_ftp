@@ -1,6 +1,7 @@
 import 'package:pure_ftp/src/file_system/entries/ftp_directory.dart';
+import 'package:pure_ftp/src/file_system/entries/ftp_entry.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_file.dart';
-import 'package:pure_ftp/src/file_system/ftp_entry.dart';
+import 'package:pure_ftp/src/file_system/ftp_entry_info.dart';
 import 'package:pure_ftp/src/main/ftp_client.dart';
 
 class FtpLink extends FtpEntry {
@@ -11,6 +12,7 @@ class FtpLink extends FtpEntry {
     required String linkTarget,
     required super.path,
     required super.client,
+    super.info,
   })  : _linkTarget = linkTarget,
         _client = client;
 
@@ -64,10 +66,15 @@ class FtpLink extends FtpEntry {
     }
   }
 
-  FtpLink copyWith(String path, String linkTarget) {
+  FtpLink copyWith({
+    String? path,
+    String? linkTarget,
+    FtpEntryInfo? info,
+  }) {
     return FtpLink(
-      path: path,
-      linkTarget: linkTarget,
+      path: path ?? this.path,
+      linkTarget: linkTarget ?? _linkTarget,
+      info: info ?? this.info,
       client: _client,
     );
   }

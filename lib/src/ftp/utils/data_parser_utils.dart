@@ -1,7 +1,7 @@
 import 'package:pure_ftp/src/extensions/ftp_directory_extensions.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_directory.dart';
+import 'package:pure_ftp/src/file_system/entries/ftp_entry.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_link.dart';
-import 'package:pure_ftp/src/file_system/ftp_entry.dart';
 import 'package:pure_ftp/src/file_system/ftp_entry_info.dart';
 import 'package:pure_ftp/src/file_system/ftp_file_system.dart';
 import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
@@ -73,7 +73,7 @@ abstract class DataParserUtils {
       );
 
   /// Parse the [response] from the LIST|MLSD command
-  static Map<FtpEntry, FtpEntryInfo?> parseListDirResponse(
+  static List<FtpEntry> parseListDirResponse(
       String response, ListType type, FtpDirectory parent) {
     switch (type) {
       case ListType.LIST:
@@ -83,9 +83,9 @@ abstract class DataParserUtils {
     }
   }
 
-  static Map<FtpEntry, FtpEntryInfo?> _parseLISTResponse(
+  static List<FtpEntry> _parseLISTResponse(
       String response, FtpDirectory parent) {
-    final result = <FtpEntry, FtpEntryInfo?>{};
+    final result = <FtpEntry>[];
     final lines =
         response.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty);
     for (final line in lines) {
@@ -95,10 +95,10 @@ abstract class DataParserUtils {
       final name = entry?.value.name ?? '';
       switch (entry?.key) {
         case 'd':
-          ftpEntry = parent.getChildDir(name);
+          ftpEntry = parent.getChildDir(name).copyWith(info: entry!.value);
           break;
         case '-':
-          ftpEntry = parent.getChildFile(name);
+          ftpEntry = parent.getChildFile(name).copyWith(info: entry!.value);
           break;
         case 'l':
           var linkTarget = '';
@@ -111,11 +111,15 @@ abstract class DataParserUtils {
             linkTarget = '__unknown__${DateTime.now().millisecondsSinceEpoch}';
           }
           ftpEntry = parent.getChildFile(linkName).as<FtpLink>();
-          ftpEntry = (ftpEntry as FtpLink).copyWith(ftpEntry.path, linkTarget);
+          ftpEntry = (ftpEntry as FtpLink).copyWith(
+            path: ftpEntry.path,
+            linkTarget: linkTarget,
+            info: entry.value,
+          );
           break;
       }
       if (ftpEntry != null) {
-        result[ftpEntry] = entry!.value;
+        result.add(ftpEntry);
       }
     }
     return result;
@@ -181,32 +185,33 @@ abstract class DataParserUtils {
     );
   }
 
-  static Map<FtpEntry, FtpEntryInfo?> _parseMLSDResponse(
+  static List<FtpEntry> _parseMLSDResponse(
       String response, FtpDirectory parent) {
     final lines =
         response.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty);
-    final result = <FtpEntry, FtpEntryInfo?>{};
+    final result = <FtpEntry>[];
     for (final line in lines) {
       final entry = _parseMLSDServerEntry(line);
       FtpEntry? ftpEntry;
       final name = entry?.value.name ?? '';
       switch (entry?.key) {
         case 'd':
-          ftpEntry = parent.getChildDir(name);
+          ftpEntry = parent.getChildDir(name).copyWith(info: entry?.value);
           break;
         case '-':
-          ftpEntry = parent.getChildFile(name);
+          ftpEntry = parent.getChildFile(name).copyWith(info: entry?.value);
           break;
         case 'l':
           ftpEntry = parent.getChildFile(name).as<FtpLink>();
           ftpEntry = (ftpEntry as FtpLink).copyWith(
-            ftpEntry.path,
-            '__unknown__${DateTime.now().millisecondsSinceEpoch}',
+            path: ftpEntry.path,
+            linkTarget: '__unknown__${DateTime.now().millisecondsSinceEpoch}',
+            info: entry?.value,
           );
           break;
       }
       if (ftpEntry != null) {
-        result[ftpEntry] = entry!.value;
+        result.add(ftpEntry);
       }
     }
     return result;

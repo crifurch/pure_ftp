@@ -2,18 +2,18 @@ import 'package:meta/meta.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_directory.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_file.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_link.dart';
+import 'package:pure_ftp/src/file_system/ftp_entry_info.dart';
 import 'package:pure_ftp/src/main/ftp_client.dart';
 
 @immutable
 abstract class FtpEntry {
   final String path;
+  final FtpEntryInfo? info;
   @protected
   final FtpClient _client;
 
-  const FtpEntry({
-    required this.path,
-    required FtpClient client,
-  }) : _client = client;
+  const FtpEntry({required this.path, required FtpClient client, this.info})
+      : _client = client;
 
   FtpDirectory get parent => FtpDirectory(
       path: path.split('/').sublist(0, path.split('/').length - 1).join('/'),

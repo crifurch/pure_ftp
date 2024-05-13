@@ -57,10 +57,14 @@ class FtpClient with TaskManagerMixin {
   }
 
   /// Disconnects from the FTP server.
-  Future<void> disconnect() async {
-    await _socket.disconnect();
+  Future<void> disconnect({bool safe = true}) async {
+    await _socket.disconnect(safe: safe);
     _isConnected = false;
   }
+
+  /// verify that client is connected
+  Future<bool> isConnected() async =>
+      _isConnected && (_isConnected = await _socket.isConnected());
 
   /// run any ftp task with verification of connection
   FtpTask<T> runSafe<T>({
@@ -68,7 +72,7 @@ class FtpClient with TaskManagerMixin {
   }) =>
       FtpTask(
         task: () async {
-          if (!_isConnected) {
+          if (!await isConnected()) {
             await connect();
           }
           late T result;
