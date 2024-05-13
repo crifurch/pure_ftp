@@ -59,7 +59,7 @@ class FtpTransfer {
               }
               var downloaded = 0;
               await socket.listen(
-                    (event) {
+                (event) {
                   stream.add(event);
                   downloaded += event.length;
                   final total = max(fileSize, downloaded);
