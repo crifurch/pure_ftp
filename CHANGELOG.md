@@ -42,3 +42,8 @@
 - adds download/upload callbacks
 - export all references to lib file, use import 'package:pure_ftp/pure_ftp.dart'; now
 - fix some bugs
+
+## 0.7.0
+
+- remake file system, now ftp entries has info in class and copyWith methods is changed.
+- client's isConnected now sends request to server to check connection status
