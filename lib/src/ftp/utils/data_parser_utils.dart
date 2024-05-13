@@ -26,12 +26,12 @@ abstract class DataParserUtils {
   ///
   /// port format (|||xxxxx|)
   static int _parsePortEPSV(FtpResponse response) {
-    final message = response.message;
+    var message = response.message;
     final iParOpen = message.indexOf('(');
     final iParClose = message.indexOf(')');
 
     if (iParClose > -1 && iParOpen > -1) {
-      message.substring(iParOpen + 4, iParClose - 1);
+      message = message.substring(iParOpen + 4, iParClose - 1);
     }
     return int.parse(message);
   }
