@@ -1,5 +1,3 @@
-// ignore_for_file: constant_identifier_names
-
 import 'dart:async';
 
 import 'package:pure_ftp/src/file_system/entries/ftp_directory.dart';
@@ -15,6 +13,9 @@ import 'package:pure_ftp/src/ftp/ftp_commands.dart';
 import 'package:pure_ftp/src/ftp/utils/data_parser_utils.dart';
 import 'package:pure_ftp/src/ftp_client.dart';
 import 'package:pure_ftp/utils/list_utils.dart';
+
+export 'package:pure_ftp/src/file_system/ftp_transfer.dart'
+    show OnTransferProgress;
 
 typedef DirInfoCache
     = MapEntry<String, Iterable<MapEntry<FtpEntry, FtpEntryInfo>>>;
@@ -51,7 +52,7 @@ class FtpFileSystem {
   FtpDirectory get currentDirectory => _currentDirectory;
 
   FtpDirectory get rootDirectory => FtpDirectory(
-    path: _rootPath,
+        path: _rootPath,
         client: _client,
       );
 
@@ -197,21 +198,42 @@ class FtpFileSystem {
             .toList();
       });
 
-  Stream<List<int>> downloadFileStream(FtpFile file) =>
-      _transfer.downloadFileStream(file);
+  Stream<List<int>> downloadFileStream(
+    FtpFile file, {
+    OnTransferProgress? onReceiveProgress,
+  }) =>
+      _transfer.downloadFileStream(
+        file,
+        onReceiveProgress: onReceiveProgress,
+      );
 
-  Future<List<int>> downloadFile(FtpFile file) async {
+  Future<List<int>> downloadFile(
+    FtpFile file, {
+    OnTransferProgress? onReceiveProgress,
+  }) async {
     final result = <int>[];
-    await downloadFileStream(file).listen(result.addAll).asFuture();
+    await downloadFileStream(
+      file,
+      onReceiveProgress: onReceiveProgress,
+    ).listen(result.addAll).asFuture();
     return result;
   }
 
-  Future<bool> uploadFile(FtpFile file, List<int> data,
-      [UploadChunkSize chunkSize = UploadChunkSize.kb4]) async {
+  Future<bool> uploadFile(
+    FtpFile file,
+    List<int> data, {
+    UploadChunkSize chunkSize = UploadChunkSize.kb4,
+    OnTransferProgress? onUploadProgress,
+  }) async {
     final stream = StreamController<List<int>>();
     var result = false;
     try {
-      final future = uploadFileFromStream(file, stream.stream);
+      final future = uploadFileFromStream(
+        file,
+        stream.stream,
+        data.length,
+        onUploadProgress: onUploadProgress,
+      );
       if (data.isEmpty) {
         stream.add(data);
       } else {
@@ -227,6 +249,20 @@ class FtpFileSystem {
       await stream.close();
     }
     return result;
+  }
+
+  Future<bool> uploadFileFromStream(
+    FtpFile file,
+    Stream<List<int>> stream,
+    int fileSize, {
+    OnTransferProgress? onUploadProgress,
+  }) async {
+    return _transfer.uploadFileStream(
+      file,
+      stream,
+      fileSize,
+      onUploadProgress: onUploadProgress,
+    );
   }
 
   Future<FtpEntryInfo?> getEntryInfo(FtpEntry entry,
@@ -248,11 +284,6 @@ class FtpFileSystem {
     throw UnimplementedError();
   }
 
-  Future<bool> uploadFileFromStream(
-      FtpFile file, Stream<List<int>> stream) async {
-    return _transfer.uploadFileStream(file, stream);
-  }
-
   FtpFileSystem copy() {
     final ftpFileSystem = FtpFileSystem(client: _client.clone());
     ftpFileSystem._currentDirectory = _currentDirectory;
@@ -267,7 +298,9 @@ class FtpFileSystem {
 }
 
 enum ListType {
+  // ignore: constant_identifier_names
   LIST(FtpCommand.LIST),
+  // ignore: constant_identifier_names
   MLSD(FtpCommand.MLSD),
   ;
 

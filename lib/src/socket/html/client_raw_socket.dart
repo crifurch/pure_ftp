@@ -18,7 +18,9 @@ class ClientRawSocketImpl extends ClientRawSocket {
   }
 
   @override
-  Future<ClientRawSocket> secureSocket({bool ignoreCertificateErrors = false}) async {
+  Future<ClientRawSocket> secureSocket({
+    bool ignoreCertificateErrors = false,
+  }) async {
     throw UnimplementedError();
   }
 

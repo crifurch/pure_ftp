@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:pure_ftp/src/file_system/entries/ftp_file.dart';
@@ -8,6 +9,8 @@ import 'package:pure_ftp/src/ftp/ftp_commands.dart';
 import 'package:pure_ftp/src/ftp/ftp_socket.dart';
 import 'package:pure_ftp/src/socket/common/client_raw_socket.dart';
 
+typedef OnTransferProgress = Function(int bytes, int total, double percents);
+
 class FtpTransfer {
   final FtpSocket _socket;
 
@@ -15,15 +18,18 @@ class FtpTransfer {
     required FtpSocket socket,
   }) : _socket = socket;
 
-  Stream<List<int>> downloadFileStream(FtpFile file) {
+  Stream<List<int>> downloadFileStream(
+    FtpFile file, {
+    OnTransferProgress? onReceiveProgress,
+  }) {
     final stream = StreamController<List<int>>();
     unawaited(_socket.openTransferChannel((socketFuture, log) async {
+      final fileSize = await file.size();
       FtpCommand.RETR.write(
         _socket,
         [file.path],
       );
       //will be closed by the transfer channel
-      // ignore: close_sinks
       final socket = await socketFuture;
       final response = await _socket.read();
 
@@ -32,11 +38,14 @@ class FtpTransfer {
       if (!transferCompleted) {
         throw FtpException('Error while downloading file');
       }
-      var total = 0;
+      var downloaded = 0;
       await socket.listen(
         (event) {
           stream.add(event);
-          log?.call('Downloaded ${total += event.length} bytes');
+          downloaded += event.length;
+          final total = max(fileSize, downloaded);
+          onReceiveProgress?.call(downloaded, total, downloaded / total * 100);
+          log?.call('Downloaded ${downloaded} of ${total} bytes');
         },
       ).asFuture();
       await _socket.read();
@@ -48,7 +57,12 @@ class FtpTransfer {
     return stream.stream;
   }
 
-  Future<bool> uploadFileStream(FtpFile file, Stream<List<int>> data) =>
+  Future<bool> uploadFileStream(
+    FtpFile file,
+    Stream<List<int>> data,
+    int fileSize, {
+    OnTransferProgress? onUploadProgress,
+  }) =>
       _socket.openTransferChannel((socketFuture, log) async {
         FtpCommand.STOR.write(
           _socket,
@@ -64,12 +78,15 @@ class FtpTransfer {
         if (!transferCompleted) {
           throw FtpException('Error while uploading file');
         }
-        var total = 0;
+        var uploaded = 0;
         final transform = data.transform<Uint8List>(
           StreamTransformer.fromHandlers(
             handleData: (event, sink) {
               sink.add(Uint8List.fromList(event));
-              log?.call('Uploaded ${total += event.length} bytes');
+              uploaded += event.length;
+              final total = max(fileSize, uploaded);
+              onUploadProgress?.call(uploaded, total, uploaded / total * 100);
+              log?.call('Downloaded ${uploaded} of ${total} bytes');
             },
           ),
         );
