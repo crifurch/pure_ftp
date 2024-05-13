@@ -34,8 +34,9 @@ class FtpFile extends FtpEntry {
     var result = false;
     try {
       final downloadFileStream = _client.fs.downloadFileStream(this);
+      //todo search way to provide file size if necessary
       final uploadStream =
-          secondClient.fs.uploadFileFromStream(fileTo, downloadFileStream);
+          secondClient.fs.uploadFileFromStream(fileTo, downloadFileStream, 0);
       result = await uploadStream;
     } finally {
       try {
