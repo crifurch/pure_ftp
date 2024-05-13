@@ -33,7 +33,12 @@
 - update example
 - add function to get size of file
 
-
 ## 0.5.2
 
 - fix timeout error on Windows
+
+## 0.6.0
+
+- adds download/upload callbacks
+- export all references to lib file, use import 'package:pure_ftp/pure_ftp.dart'; now
+- fix some bugs

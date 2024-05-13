@@ -1,9 +1,6 @@
 import 'dart:io';
 
-import 'package:pure_ftp/src/file_system/entries/ftp_link.dart';
-import 'package:pure_ftp/src/file_system/ftp_file_system.dart';
-import 'package:pure_ftp/src/ftp/ftp_socket.dart';
-import 'package:pure_ftp/src/main/ftp_client.dart';
+import 'package:pure_ftp/pure_ftp.dart';
 import 'package:yaml/yaml.dart';
 
 void main() async {
