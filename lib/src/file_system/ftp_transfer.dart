@@ -71,7 +71,7 @@ class FtpTransfer {
               await _socket.read();
               await stream.close();
             },
-                (error, stackTrace) {
+            (error, stackTrace) {
               stream.addError(error, stackTrace);
               stream.close();
             },
