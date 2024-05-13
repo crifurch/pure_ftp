@@ -160,8 +160,9 @@ class FtpFileSystem {
           throw FtpException('Unknown type');
         }
       });
-      _dirInfoCache.add(MapEntry(mainPath, remappedEntries.whereType()));
-      return remappedEntries.whereType().toList();
+      _dirInfoCache
+          .add(MapEntry(mainPath, remappedEntries.whereType<FtpEntry>()));
+      return remappedEntries.whereType<FtpEntry>().toList();
     });
     return result;
   }
