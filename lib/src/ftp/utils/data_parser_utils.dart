@@ -73,8 +73,8 @@ abstract class DataParserUtils {
       );
 
   /// Parse the [response] from the LIST|MLSD command
-  static List<FtpEntry> parseListDirResponse(String response, ListType type,
-      FtpDirectory parent) {
+  static List<FtpEntry> parseListDirResponse(
+      String response, ListType type, FtpDirectory parent) {
     switch (type) {
       case ListType.LIST:
         return _parseLISTResponse(response, parent);
@@ -83,11 +83,11 @@ abstract class DataParserUtils {
     }
   }
 
-  static List<FtpEntry> _parseLISTResponse(String response,
-      FtpDirectory parent) {
+  static List<FtpEntry> _parseLISTResponse(
+      String response, FtpDirectory parent) {
     final result = <FtpEntry>[];
     final lines =
-    response.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty);
+        response.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty);
     for (final line in lines) {
       final MapEntry<String, FtpEntryInfo>? entry =
           _parseListServerEntry(line) ?? _parseSiiServerEntry(line);
@@ -108,9 +108,7 @@ abstract class DataParserUtils {
             linkTarget = split[1];
             linkName = split[0];
           } else {
-            linkTarget = '__unknown__${DateTime
-                .now()
-                .millisecondsSinceEpoch}';
+            linkTarget = '__unknown__${DateTime.now().millisecondsSinceEpoch}';
           }
           ftpEntry = parent.getChildFile(linkName).as<FtpLink>();
           ftpEntry = (ftpEntry as FtpLink).copyWith(
@@ -187,10 +185,10 @@ abstract class DataParserUtils {
     );
   }
 
-  static List<FtpEntry> _parseMLSDResponse(String response,
-      FtpDirectory parent) {
+  static List<FtpEntry> _parseMLSDResponse(
+      String response, FtpDirectory parent) {
     final lines =
-    response.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty);
+        response.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty);
     final result = <FtpEntry>[];
     for (final line in lines) {
       final entry = _parseMLSDServerEntry(line);
@@ -207,9 +205,7 @@ abstract class DataParserUtils {
           ftpEntry = parent.getChildFile(name).as<FtpLink>();
           ftpEntry = (ftpEntry as FtpLink).copyWith(
             path: ftpEntry.path,
-            linkTarget: '__unknown__${DateTime
-                .now()
-                .millisecondsSinceEpoch}',
+            linkTarget: '__unknown__${DateTime.now().millisecondsSinceEpoch}',
             info: entry?.value,
           );
           break;

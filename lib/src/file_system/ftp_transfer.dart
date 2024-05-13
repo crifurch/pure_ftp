@@ -26,10 +26,10 @@ class FtpTransfer {
     final stream = StreamController<List<int>>();
     unawaited(
       Future.sync(
-            () async {
+        () async {
           final fileSize = await file.size();
           await _socket.openTransferChannel(
-                (socketFuture, log) async {
+            (socketFuture, log) async {
               if (restSize > fileSize) {
                 throw FtpException(
                   'restSize more than file size. fileSize:${fileSize}, restSize:${restSize}',
@@ -39,7 +39,7 @@ class FtpTransfer {
                 await FtpCommand.TYPE
                     .writeAndRead(_socket, [FtpTransferType.binary.type]);
                 final ret =
-                await FtpCommand.REST.writeAndRead(_socket, ['$restSize']);
+                    await FtpCommand.REST.writeAndRead(_socket, ['$restSize']);
                 if (ret.code >= 400) {
                   throw FtpException(ret.message);
                 }
@@ -86,9 +86,9 @@ class FtpTransfer {
     FtpFile file,
     Stream<List<int>> data,
     int fileSize, {
-        bool append = false,
-        OnTransferProgress? onUploadProgress,
-      }) =>
+    bool append = false,
+    OnTransferProgress? onUploadProgress,
+  }) =>
       _socket.openTransferChannel((socketFuture, log) async {
         (append ? FtpCommand.APPE : FtpCommand.STOR).write(
           _socket,
