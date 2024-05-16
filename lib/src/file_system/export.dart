@@ -5,3 +5,5 @@ export 'entries/ftp_link.dart';
 export 'ftp_entry_info.dart';
 export 'ftp_file_system.dart';
 export 'ftp_transfer.dart';
+export 'models/list_type.dart';
+export 'models/upload_chunk_size.dart';

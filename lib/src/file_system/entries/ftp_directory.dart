@@ -1,6 +1,7 @@
 import 'package:pure_ftp/src/extensions/ftp_directory_extensions.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_entry.dart';
 import 'package:pure_ftp/src/file_system/ftp_entry_info.dart';
+import 'package:pure_ftp/src/file_system/models/list_type.dart';
 import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
 import 'package:pure_ftp/src/ftp/ftp_commands.dart';
@@ -132,7 +133,10 @@ class FtpDirectory extends FtpEntry {
   @override
   int get hashCode => path.hashCode ^ _client.hashCode;
 
-  Future<List<FtpEntry>> list() => _client.fs.listDirectory(directory: this);
+  Future<List<FtpEntry>> list({
+    ListType? listType,
+  }) =>
+      _client.fs.listDirectory(directory: this, listType: listType);
 
   Future<List<String>> listNames() => _client.fs.listDirectoryNames(this);
 

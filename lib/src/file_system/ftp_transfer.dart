@@ -30,12 +30,12 @@ class FtpTransfer {
           final fileSize = await file.size();
           await _socket.openTransferChannel(
             (socketFuture, log) async {
-              if (restSize > fileSize) {
-                throw FtpException(
-                  'restSize more than file size. fileSize:${fileSize}, restSize:${restSize}',
-                );
-              }
               if (restSize > 0) {
+                if (restSize > fileSize && fileSize > 0) {
+                  throw FtpException(
+                    'restSize more than file size. fileSize:${fileSize}, restSize:${restSize}',
+                  );
+                }
                 await FtpCommand.TYPE
                     .writeAndRead(_socket, [FtpTransferType.binary.type]);
                 final ret =
