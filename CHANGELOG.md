@@ -47,3 +47,7 @@
 
 - remake file system, now ftp entries has info in class and copyWith methods is changed.
 - client's isConnected now sends request to server to check connection status
+
+## 0.7.1
+
+- fix restSize error on download
