@@ -125,7 +125,8 @@ class FtpFileSystem {
     final dir = directory ?? _currentDirectory;
     final result = await _client.socket
         .openTransferChannel<List<FtpEntry>>((socketFuture, log) async {
-      listType!.command.write(_client.socket, [dir.path]);
+      listType!.command
+          .write(_client.socket, [if (dir != _currentDirectory) dir.path]);
       final socket = await socketFuture;
       final response = await _client.socket.read();
 
@@ -167,31 +168,33 @@ class FtpFileSystem {
     return result;
   }
 
-  Future<List<String>> listDirectoryNames([FtpDirectory? directory]) =>
-      _client.socket
-          .openTransferChannel<List<String>>((socketFuture, log) async {
-        FtpCommand.NLST.write(
-          _client.socket,
-          [directory?.path ?? _currentDirectory.path],
-        );
-        final socket = await socketFuture;
-        final response = await _client.socket.read();
+  Future<List<String>> listDirectoryNames([FtpDirectory? directory]) {
+    final dir = directory ?? _currentDirectory;
+    return _client.socket
+        .openTransferChannel<List<String>>((socketFuture, log) async {
+      FtpCommand.NLST.write(
+        _client.socket,
+        [if (dir != _currentDirectory) dir.path],
+      );
+      final socket = await socketFuture;
+      final response = await _client.socket.read();
 
-        // wait 125 || 150 and >200 that indicates the end of the transfer
-        final bool transferCompleted = response.isSuccessfulForDataTransfer;
-        if (!transferCompleted) {
-          throw FtpException('Error while listing directory names');
-        }
-        final List<int> data = [];
-        await socket.listen(data.addAll).asFuture();
-        final listData = String.fromCharCodes(data);
-        log?.call(listData);
-        return listData
-            .split('\n')
-            .map((e) => e.trim())
-            .where((element) => element.isNotEmpty)
-            .toList();
-      });
+      // wait 125 || 150 and >200 that indicates the end of the transfer
+      final bool transferCompleted = response.isSuccessfulForDataTransfer;
+      if (!transferCompleted) {
+        throw FtpException('Error while listing directory names');
+      }
+      final List<int> data = [];
+      await socket.listen(data.addAll).asFuture();
+      final listData = String.fromCharCodes(data);
+      log?.call(listData);
+      return listData
+          .split('\n')
+          .map((e) => e.trim())
+          .where((element) => element.isNotEmpty)
+          .toList();
+    });
+  }
 
   Stream<List<int>> downloadFileStream(
     FtpFile file, {
@@ -296,6 +299,3 @@ class FtpFileSystem {
     _dirInfoCache.clear();
   }
 }
-
-
-
