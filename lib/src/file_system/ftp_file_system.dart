@@ -197,20 +197,24 @@ class FtpFileSystem {
 
   Stream<List<int>> downloadFileStream(
     FtpFile file, {
+    int restSize = 0,
     OnTransferProgress? onReceiveProgress,
   }) =>
       _transfer.downloadFileStream(
         file,
+        restSize: restSize,
         onReceiveProgress: onReceiveProgress,
       );
 
   Future<List<int>> downloadFile(
     FtpFile file, {
+    int restSize = 0,
     OnTransferProgress? onReceiveProgress,
   }) async {
     final result = <int>[];
     await downloadFileStream(
       file,
+      restSize: restSize,
       onReceiveProgress: onReceiveProgress,
     ).listen(result.addAll).asFuture();
     return result;
