@@ -51,3 +51,7 @@
 ## 0.7.1
 
 - fix restSize error on download
+
+## 0.7.2
+
+- fix error on list dir
