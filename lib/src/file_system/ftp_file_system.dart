@@ -182,18 +182,18 @@ class FtpFileSystem {
       // wait 125 || 150 and >200 that indicates the end of the transfer
       final bool transferCompleted = response.isSuccessfulForDataTransfer;
       if (!transferCompleted) {
-          throw FtpException('Error while listing directory names');
-        }
-        final List<int> data = [];
-        await socket.listen(data.addAll).asFuture();
-        final listData = String.fromCharCodes(data);
-        log?.call(listData);
-        return listData
-            .split('\n')
-            .map((e) => e.trim())
-            .where((element) => element.isNotEmpty)
-            .toList();
-      });
+        throw FtpException('Error while listing directory names');
+      }
+      final List<int> data = [];
+      await socket.listen(data.addAll).asFuture();
+      final listData = String.fromCharCodes(data);
+      log?.call(listData);
+      return listData
+          .split('\n')
+          .map((e) => e.trim())
+          .where((element) => element.isNotEmpty)
+          .toList();
+    });
   }
 
   Stream<List<int>> downloadFileStream(
