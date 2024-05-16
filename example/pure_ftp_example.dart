@@ -24,7 +24,6 @@ void main() async {
   await client.currentDirectory.listNames().then(print);
 
   await _getDirList(client);
-
   try {
     client.fs.listType = ListType.MLSD;
     await _getDirList(client);

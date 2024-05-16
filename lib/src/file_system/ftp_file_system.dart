@@ -7,6 +7,8 @@ import 'package:pure_ftp/src/file_system/entries/ftp_file.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_link.dart';
 import 'package:pure_ftp/src/file_system/ftp_entry_info.dart';
 import 'package:pure_ftp/src/file_system/ftp_transfer.dart';
+import 'package:pure_ftp/src/file_system/models/list_type.dart';
+import 'package:pure_ftp/src/file_system/models/upload_chunk_size.dart';
 import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
 import 'package:pure_ftp/src/ftp/extensions/string_find_extension.dart';
@@ -117,15 +119,13 @@ class FtpFileSystem {
 
   Future<List<FtpEntry>> listDirectory({
     FtpDirectory? directory,
-    ListType? override,
+    ListType? listType,
   }) async {
-    final listType = override ?? this.listType;
+    listType ??= this.listType;
     final dir = directory ?? _currentDirectory;
     final result = await _client.socket
         .openTransferChannel<List<FtpEntry>>((socketFuture, log) async {
-      listType.command.write(_client.socket, [dir.path]);
-      //will be closed by the transfer channel
-      // ignore: close_sinks
+      listType!.command.write(_client.socket, [dir.path]);
       final socket = await socketFuture;
       final response = await _client.socket.read();
 
@@ -174,8 +174,6 @@ class FtpFileSystem {
           _client.socket,
           [directory?.path ?? _currentDirectory.path],
         );
-        //will be closed by the transfer channel
-        // ignore: close_sinks
         final socket = await socketFuture;
         final response = await _client.socket.read();
 
@@ -299,31 +297,5 @@ class FtpFileSystem {
   }
 }
 
-enum ListType {
-  // ignore: constant_identifier_names
-  LIST(FtpCommand.LIST),
-  // ignore: constant_identifier_names
-  MLSD(FtpCommand.MLSD),
-  ;
 
-  final FtpCommand command;
 
-  const ListType(this.command);
-}
-
-enum UploadChunkSize {
-  kb1(1024),
-  kb2(2048),
-  kb4(4096),
-  mb1(1024 * 1024),
-  mb2(2 * 1024 * 1024),
-  mb4(4 * 1024 * 1024),
-  ;
-
-  final int value;
-
-  const UploadChunkSize(this.value);
-
-  @override
-  String toString() => 'UploadChunkSize(${value}b)';
-}

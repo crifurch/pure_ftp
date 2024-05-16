@@ -3,7 +3,7 @@ import 'package:pure_ftp/src/file_system/entries/ftp_directory.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_entry.dart';
 import 'package:pure_ftp/src/file_system/entries/ftp_link.dart';
 import 'package:pure_ftp/src/file_system/ftp_entry_info.dart';
-import 'package:pure_ftp/src/file_system/ftp_file_system.dart';
+import 'package:pure_ftp/src/file_system/models/list_type.dart';
 import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
 import 'package:pure_ftp/src/ftp/ftp_response.dart';
 
