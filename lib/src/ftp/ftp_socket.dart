@@ -192,14 +192,10 @@ class FtpSocket {
 
   /// Flush the response from the server
   Future<void> flush() async {
-    await Future.doWhile(() async {
-      if (_socket.available() > 0) {
-        _socket.readMessage();
-        return false;
-      }
-      await Future.delayed(const Duration(milliseconds: 300));
-      return false;
-    });
+    if (_socket.available() > 0) {
+      _socket.readMessage();
+    }
+    await Future.delayed(const Duration(milliseconds: 300));
     if (_socket.available() > 0) {
       await flush();
     }
