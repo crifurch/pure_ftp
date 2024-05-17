@@ -4,7 +4,7 @@ import 'package:pure_ftp/pure_ftp.dart';
 import 'package:yaml/yaml.dart';
 
 void main() async {
-  final configFile = File('test_connection2.yml');
+  final configFile = File('default_connection.yml');
 
   final config = loadYaml(await configFile.readAsString());
   final client = FtpClient(
@@ -31,8 +31,6 @@ void main() async {
     // maybe server doesn't support MLSD
     print(e);
   }
-  final childFile = client.currentDirectory.getChildFile('test1');
-  await client.fs.downloadFile(childFile);
 
   await client.disconnect();
 }
