@@ -198,7 +198,7 @@ class FtpSocket {
         return false;
       }
       await Future.delayed(const Duration(milliseconds: 300));
-      return true;
+      return false;
     });
     if (_socket.available() > 0) {
       await flush();
