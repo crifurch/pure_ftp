@@ -68,6 +68,7 @@ class FtpTransfer {
                   log?.call('Downloaded ${downloaded} of ${total} bytes');
                 },
               ).asFuture();
+              await _socket.flush();
               await stream.close();
             },
             (error, stackTrace) {

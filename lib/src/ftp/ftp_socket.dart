@@ -190,6 +190,21 @@ class FtpSocket {
     return FtpResponse(code: code, message: result);
   }
 
+  /// Flush the response from the server
+  Future<void> flush() async {
+    await Future.doWhile(() async {
+      if (_socket.available() > 0) {
+        _socket.readMessage();
+        return false;
+      }
+      await Future.delayed(const Duration(milliseconds: 300));
+      return true;
+    });
+    if (_socket.available() > 0) {
+      await flush();
+    }
+  }
+
   /// Send message to the server
   ///
   /// if [command] is true then the message will be sent as a command
