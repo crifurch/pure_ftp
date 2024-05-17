@@ -55,3 +55,8 @@
 ## 0.7.2
 
 - fix error on list dir
+
+## 0.7.3
+
+- add flush method to socket
+- fix download problem for any ftp servers
