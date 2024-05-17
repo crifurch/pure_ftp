@@ -4,7 +4,7 @@ import 'package:pure_ftp/pure_ftp.dart';
 import 'package:yaml/yaml.dart';
 
 void main() async {
-  final configFile = File('default_connection.yml');
+  final configFile = File('test_connection2.yml');
 
   final config = loadYaml(await configFile.readAsString());
   final client = FtpClient(
@@ -31,6 +31,9 @@ void main() async {
     // maybe server doesn't support MLSD
     print(e);
   }
+  final childFile =
+      client.currentDirectory.getChildFile('capscraft.com/api/backend_');
+  await client.fs.downloadFile(childFile);
 
   await client.disconnect();
 }

@@ -68,7 +68,6 @@ class FtpTransfer {
                   log?.call('Downloaded ${downloaded} of ${total} bytes');
                 },
               ).asFuture();
-              await _socket.read();
               await stream.close();
             },
             (error, stackTrace) {
@@ -110,7 +109,7 @@ class FtpTransfer {
               uploaded += event.length;
               final total = max(fileSize, uploaded);
               onUploadProgress?.call(uploaded, total, uploaded / total * 100);
-              log?.call('Downloaded ${uploaded} of ${total} bytes');
+              log?.call('Uploaded ${uploaded} of ${total} bytes');
             },
           ),
         );
