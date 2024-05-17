@@ -174,7 +174,7 @@ class FtpSocket {
       res.write(ftpResponse.message);
       result = res.toString().trimLeft();
     }
-    if (code == -1)
+    if (code == -1) {
       for (var i = lines.length - 1; i >= 0; i--) {
         final line = lines[i];
         if (line.length >= 3) {
@@ -182,7 +182,7 @@ class FtpSocket {
           break;
         }
       }
-
+    }
     if (code == -1) {
       throw FtpException('Illegal Reply Exception');
     }

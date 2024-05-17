@@ -9,9 +9,9 @@ void main() {
   final moduleName = Directory.current.path.split(Platform.pathSeparator).last;
   File(''
           '${Directory.current.path}${Platform.pathSeparator}lib${Platform.pathSeparator}'
-          '${moduleName}.dart')
+          '$moduleName.dart')
       .writeAsStringSync(
-    'library ${moduleName};\n\n'
+    'library $moduleName;\n\n'
     '${exportFiles.map((e) => "export "
         "'${getSubPath(Directory('${Directory.current.path}${Platform.pathSeparator}lib'), e.path)}'"
         ";\n").join()}',

@@ -150,12 +150,12 @@ class FtpFileSystem {
       }
       final remappedEntries = parseListDirResponse.map((e) {
         if (e is FtpDirectory) {
-          return e.copyWith(path: '${mainPath}/${e.name}');
+          return e.copyWith(path: '$mainPath/${e.name}');
         } else if (e is FtpFile) {
-          return e.copyWith(path: '${mainPath}/${e.name}');
+          return e.copyWith(path: '$mainPath/${e.name}');
         } else if (e is FtpLink) {
           return e.copyWith(
-            path: '${mainPath}/${e.name}',
+            path: '$mainPath/${e.name}',
           );
         } else {
           throw FtpException('Unknown type');

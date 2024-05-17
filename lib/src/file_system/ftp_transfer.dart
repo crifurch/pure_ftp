@@ -33,7 +33,7 @@ class FtpTransfer {
               if (restSize > 0) {
                 if (restSize > fileSize && fileSize > 0) {
                   throw FtpException(
-                    'restSize more than file size. fileSize:${fileSize}, restSize:${restSize}',
+                    'restSize more than file size. fileSize:$fileSize, restSize:$restSize',
                   );
                 }
                 await FtpCommand.TYPE
@@ -65,7 +65,7 @@ class FtpTransfer {
                   final total = max(fileSize, downloaded);
                   onReceiveProgress?.call(
                       downloaded, total, downloaded / total * 100);
-                  log?.call('Downloaded ${downloaded} of ${total} bytes');
+                  log?.call('Downloaded $downloaded of $total bytes');
                 },
               ).asFuture();
               await _socket.flush();
@@ -110,7 +110,7 @@ class FtpTransfer {
               uploaded += event.length;
               final total = max(fileSize, uploaded);
               onUploadProgress?.call(uploaded, total, uploaded / total * 100);
-              log?.call('Uploaded ${uploaded} of ${total} bytes');
+              log?.call('Uploaded $uploaded of $total bytes');
             },
           ),
         );

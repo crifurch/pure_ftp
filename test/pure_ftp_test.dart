@@ -44,7 +44,7 @@ void main() async {
     result.forEach(print);
   });
 
-  if (config['active_host'] != null)
+  if (config['active_host'] != null) {
     test('file system test in active mode', () async {
       client.socket.transferMode = FtpTransferMode.active(
         host: config['active_host'],
@@ -53,7 +53,7 @@ void main() async {
       final result = await client.currentDirectory.list();
       result.forEach(print);
     });
-
+  }
   client.socket.transferMode = FtpTransferMode.passive;
 
   test('disconnect test', () async {
