@@ -79,7 +79,7 @@ class FtpFile extends FtpEntry {
     if (!response.isSuccessful) {
       return -1;
     }
-    return int.parse(response.message.substring(4));
+    return int.tryParse(response.message.substring(4)) ?? -1;
   }
 
   @override
