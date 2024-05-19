@@ -60,3 +60,7 @@
 
 - add flush method to socket
 - fix download problem for any ftp servers
+
+## 0.7.4
+
+- fix get file error when unrecognized format
