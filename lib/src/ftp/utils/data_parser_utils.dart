@@ -5,6 +5,7 @@ import 'package:pure_ftp/src/file_system/entries/ftp_link.dart';
 import 'package:pure_ftp/src/file_system/ftp_entry_info.dart';
 import 'package:pure_ftp/src/file_system/models/list_type.dart';
 import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
+import 'package:pure_ftp/src/ftp/extensions/string_find_extension.dart';
 import 'package:pure_ftp/src/ftp/ftp_response.dart';
 
 abstract class DataParserUtils {
@@ -41,11 +42,7 @@ abstract class DataParserUtils {
   ///
   /// format 227 Entering Passive Mode (192,168,8,36,8,75).
   static int _parsePortPASV(FtpResponse response) {
-    final message = response.message;
-    final iParOpen = message.indexOf('(');
-    final iParClose = message.indexOf(')');
-
-    final sParameters = message.substring(iParOpen + 1, iParClose);
+    final sParameters = response.message.find('(', ')');
     final lstParameters = sParameters.split(',');
 
     final iPort1 = int.parse(lstParameters[lstParameters.length - 2]);
