@@ -7,6 +7,7 @@ import 'dart:math';
 import 'package:meta/meta.dart';
 import 'package:pure_ftp/src/ftp/exceptions/ftp_exception.dart';
 import 'package:pure_ftp/src/ftp/extensions/ftp_command_extension.dart';
+import 'package:pure_ftp/src/ftp/extensions/string_find_extension.dart';
 import 'package:pure_ftp/src/ftp/ftp_commands.dart';
 import 'package:pure_ftp/src/ftp/ftp_response.dart';
 import 'package:pure_ftp/src/ftp/utils/data_parser_utils.dart';
@@ -244,8 +245,12 @@ class FtpSocket {
           'Could not open transfer channel: ${ftpResponse.message}');
     }
     final port = DataParserUtils.parsePort(ftpResponse, isIPV6: supportIPv6);
-    final ClientSocket dataSocket =
-        await ClientSocket.connect(_host, port, timeout: _timeout);
+    final host = ftpResponse.message.find('(', ')').split(',');
+    final ClientSocket dataSocket = await ClientSocket.connect(
+      host.take(host.length - 2).join('.'),
+      port,
+      timeout: _timeout,
+    );
     T result;
     try {
       result = await doStuff(dataSocket, _log);
