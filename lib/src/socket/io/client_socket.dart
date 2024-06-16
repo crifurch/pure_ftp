@@ -57,6 +57,32 @@ class ClientSocketImpl extends ClientSocket {
       );
 
   @override
+  Future<void> listenAsync(
+    void Function(Uint8List event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) async {
+    try {
+      // ignore: prefer_foreach
+      await for (final event in _socket) {
+        onData?.call(event);
+      }
+    } on Exception {
+      onError?.call();
+    }
+    if (cancelOnError == false) {
+      await listenAsync(
+        onData,
+        onError: onError,
+        cancelOnError: cancelOnError,
+        onDone: onDone,
+      );
+    }
+    onDone?.call();
+  }
+
+  @override
   void add(Uint8List data) {
     _socket.add(data);
   }

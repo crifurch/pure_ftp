@@ -147,17 +147,35 @@ class FtpSocket {
     }
   }
 
+  bool _haveCommand(String s) {
+    final lines = s.split('\n');
+    for (final line in lines) {
+      final test = line.trim();
+      if (test.length < 3 || (test.length >= 4 && line[3] != ' ')) {
+        continue;
+      }
+      return true;
+    }
+
+    return false;
+  }
+
   /// Fetch the response from the server
   ///
-  /// FtpSocket.timeout is the time to wait for the response
+  /// FtpSocket.timeout is the time to wait for the response after that FtpException will thrown
   Future<FtpResponse> read() async {
     final res = StringBuffer();
     await Future.doWhile(() async {
       if (_socket.available() > 0) {
-        res.write(String.fromCharCodes(_socket.readMessage()!.toList()).trim());
+        final string = String.fromCharCodes(_socket.readMessage()!.toList());
+        res.write('${string.trim()}\n');
+        if (!_haveCommand(res.toString())) {
+          return true;
+        }
         return false;
       }
-      await Future.delayed(const Duration(milliseconds: 300));
+
+      await Future.delayed(const Duration(milliseconds: 5));
       return true;
     }).timeout(_timeout, onTimeout: () {
       throw FtpException('Timeout reached for Receiving response!');
@@ -192,13 +210,22 @@ class FtpSocket {
 
   /// Flush the response from the server
   Future<void> flush() async {
-    if (_socket.available() > 0) {
-      _socket.readMessage();
-    }
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (_socket.available() > 0) {
-      await flush();
-    }
+    final res = StringBuffer();
+    await Future.doWhile(() async {
+      if (_socket.available() > 0) {
+        final string = String.fromCharCodes(_socket.readMessage()!.toList());
+        res.write('${string.trim()}\n');
+        if (!_haveCommand(res.toString())) {
+          return true;
+        }
+        return false;
+      }
+
+      await Future.delayed(const Duration(milliseconds: 5));
+      return true;
+    }).timeout(const Duration(milliseconds: 300), onTimeout: () {
+      // no command to flush ignore
+    });
   }
 
   /// Send message to the server
@@ -260,14 +287,10 @@ class FtpSocket {
     return result;
   }
 
-  Future<T> openTransferChannel<T>(
+  Future<T> _openTransferChannelActive<T>(
     TransferChannelCallback doStuff, [
     TransferFailCallback? onFail,
   ]) async {
-    if (transferMode == FtpTransferMode.passive) {
-      return _openTransferChannelPassive(doStuff, onFail);
-    }
-    //active mode
     final server = await HostServer.bind(WebIONetworkAddress.anyIPv4.host,
         transferMode.port ?? Random().nextInt(10000) + 10000);
 
@@ -303,6 +326,24 @@ class FtpSocket {
       _log?.call(e.toString());
     }
     return result;
+  }
+
+  Future<T> openTransferChannel<T>(
+    TransferChannelCallback doStuff, [
+    TransferFailCallback? onFail,
+  ]) {
+    Future<T> result;
+    if (transferMode == FtpTransferMode.passive) {
+      result = _openTransferChannelPassive(doStuff, onFail);
+    } else {
+      result = _openTransferChannelActive(doStuff, onFail);
+    }
+    return result.then((value) async {
+      //skip successful response from server if presented
+      await flush();
+      return value;
+    });
+    //active mode
   }
 
   FtpSocket copy() => FtpSocket(
