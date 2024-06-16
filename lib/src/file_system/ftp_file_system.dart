@@ -127,21 +127,20 @@ class FtpFileSystem {
         .openTransferChannel<List<FtpEntry>>((socketFuture, log) async {
       listType!.command
           .write(_client.socket, [if (dir != _currentDirectory) dir.path]);
-      final socket = await socketFuture;
+      final dataSocket = await socketFuture;
       final response = await _client.socket.read();
 
       // wait 125 || 150 and >200 that indicates the end of the transfer
-      final bool transferCompleted = response.isSuccessfulForDataTransfer;
-      if (!transferCompleted) {
+      final bool transferAccepted = response.isSuccessfulForDataTransfer;
+      if (!transferAccepted) {
         if (response.code == 500 && listType == ListType.MLSD) {
           throw FtpException('MLSD command not supported by server');
         }
         throw FtpException('Error while listing directory');
       }
       final List<int> data = [];
-      await socket.listen(data.addAll).asFuture();
+      await dataSocket.listenAsync(data.addAll);
       final listData = utf8.decode(data, allowMalformed: true);
-      log?.call(listData);
       final parseListDirResponse =
           DataParserUtils.parseListDirResponse(listData, listType, dir);
       var mainPath = dir.path;
@@ -180,14 +179,13 @@ class FtpFileSystem {
       final response = await _client.socket.read();
 
       // wait 125 || 150 and >200 that indicates the end of the transfer
-      final bool transferCompleted = response.isSuccessfulForDataTransfer;
-      if (!transferCompleted) {
+      final bool transferAccepted = response.isSuccessfulForDataTransfer;
+      if (!transferAccepted) {
         throw FtpException('Error while listing directory names');
       }
       final List<int> data = [];
-      await socket.listen(data.addAll).asFuture();
+      await socket.listenAsync(data.addAll);
       final listData = String.fromCharCodes(data);
-      log?.call(listData);
       return listData
           .split('\n')
           .map((e) => e.trim())

@@ -41,6 +41,17 @@ class ClientSocketImpl extends ClientSocket {
   }
 
   @override
+  Future<void> listenAsync(
+    void Function(Uint8List event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) {
+    // TODO: implement listen
+    throw UnimplementedError();
+  }
+
+  @override
   void add(Uint8List data) {
     // TODO: implement add
     throw UnimplementedError();

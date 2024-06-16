@@ -22,6 +22,13 @@ abstract class ClientSocket {
     bool? cancelOnError,
   });
 
+  Future<void> listenAsync(
+    void Function(Uint8List event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  });
+
   void add(Uint8List data);
 
   void write(

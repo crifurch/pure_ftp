@@ -48,7 +48,7 @@ class FtpTransfer {
                 _socket,
                 [file.path],
               );
-              final socket = await socketFuture;
+              final dataSocket = await socketFuture;
               final response = await _socket.read();
 
               // wait 125 || 150 and >200 that indicates the end of the transfer
@@ -58,7 +58,7 @@ class FtpTransfer {
                 throw FtpException('Error while downloading file');
               }
               var downloaded = 0;
-              await socket.listen(
+              await dataSocket.listenAsync(
                 (event) {
                   stream.add(event);
                   downloaded += event.length;
@@ -67,8 +67,7 @@ class FtpTransfer {
                       downloaded, total, downloaded / total * 100);
                   log?.call('Downloaded $downloaded of $total bytes');
                 },
-              ).asFuture();
-              await _socket.flush();
+              );
               await stream.close();
             },
             (error, stackTrace) {
