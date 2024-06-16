@@ -64,3 +64,8 @@
 ## 0.7.4
 
 - fix get file error when unrecognized format
+
+## 0.7.5
+
+- speed up read ftp server response
+- fix flushing "ok" server response after data transferring
