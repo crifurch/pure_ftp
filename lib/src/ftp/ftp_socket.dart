@@ -201,7 +201,7 @@ class FtpSocket {
     if (code == -1) {
       throw FtpException('Illegal Reply Exception');
     }
-    _log?.call('[${DateTime.now().toString()}] $_host:$_port< $result');
+    _log?.call('[${DateTime.now().toString()}] $_host:$_port< ${result.trim()}');
     return FtpResponse(code: code, message: result);
   }
 
