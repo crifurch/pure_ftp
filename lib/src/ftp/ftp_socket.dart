@@ -16,10 +16,8 @@ import 'package:pure_ftp/src/socket/common/client_socket.dart';
 import 'package:pure_ftp/src/socket/common/host_server.dart';
 import 'package:pure_ftp/src/socket/common/web_io_network_address.dart';
 
-typedef TransferChannelCallback<T> = FutureOr<T> Function(
-    FutureOr<ClientSocket> socketFuture, LogCallback? log);
-typedef TransferFailCallback = FutureOr<void> Function(
-    Object error, StackTrace stackTrace);
+typedef TransferChannelCallback<T> = FutureOr<T> Function(FutureOr<ClientSocket> socketFuture, LogCallback? log);
+typedef TransferFailCallback = FutureOr<void> Function(Object error, StackTrace stackTrace);
 
 class FtpSocket {
   final String _host;
@@ -27,6 +25,7 @@ class FtpSocket {
   final Duration _timeout;
   final void Function(dynamic message)? _log;
   final SecurityType _securityType;
+  final bool supportUtf8;
   bool supportIPv6;
   FtpTransferMode transferMode;
   FtpTransferType _transferType;
@@ -37,21 +36,20 @@ class FtpSocket {
     required FtpSocketInitOptions options,
     LogCallback? logCallback,
   })  : _host = options.host,
-        _port = options.port ??
-            (options.securityType == SecurityType.FTPS ? 990 : 21),
+        _port = options.port ?? (options.securityType == SecurityType.FTPS ? 990 : 21),
         _timeout = options.timeout,
         _log = logCallback,
         transferMode = options.transferMode,
         _transferType = options.transferType,
         _securityType = options.securityType,
-        supportIPv6 = options.supportIPv6;
+        supportIPv6 = options.supportIPv6,
+        supportUtf8 = options.supportUtf8;
 
   /// Connect to the FTP Server with given credentials
   ///
   /// and set the transfer mode
   Future<void> connect(String user, String pass, {String? account}) async {
-    _log?.call(
-        'Connecting to $_host:$_port with user:$user, pass:${'*' * pass.length}, account:$account');
+    _log?.call('Connecting to $_host:$_port with user:$user, pass:${'*' * pass.length}, account:$account');
     try {
       _socket = await ClientRawSocket.connect(
         _host,
@@ -69,10 +67,8 @@ class FtpSocket {
     if (_securityType.isSecure) {
       if (_securityType.isExplicit) {
         if (!(await FtpCommand.AUTH.writeAndRead(this, ['TLS'])).isSuccessful) {
-          if (!(await FtpCommand.AUTH.writeAndRead(this, ['SSL']))
-              .isSuccessful) {
-            throw FtpException(
-                'FTPES cannot be applied: the server refused both AUTH TLS and AUTH SSL commands');
+          if (!(await FtpCommand.AUTH.writeAndRead(this, ['SSL'])).isSuccessful) {
+            throw FtpException('FTPES cannot be applied: the server refused both AUTH TLS and AUTH SSL commands');
           }
         }
       }
@@ -110,6 +106,9 @@ class FtpSocket {
     if (!ftpResponse.isSuccessful) {
       throw FtpException('Wrong Username/password');
     }
+    if (supportUtf8) {
+      await FtpCommand.OPTS.writeAndRead(this, ['UTF8', 'ON']);
+    }
     await FtpCommand.TYPE.writeAndRead(this, [_transferType.type]);
     _log?.call('Logged in');
   }
@@ -138,9 +137,7 @@ class FtpSocket {
   /// verify that socket is connected and server send response
   Future<bool> isConnected() async {
     try {
-      final res = await FtpCommand.NOOP
-          .writeAndRead(this)
-          .timeout(const Duration(seconds: 3));
+      final res = await FtpCommand.NOOP.writeAndRead(this).timeout(const Duration(seconds: 3));
       return res.code == 200;
     } on TimeoutException {
       return false;
@@ -267,12 +264,10 @@ class FtpSocket {
     final passiveCommand = supportIPv6 ? FtpCommand.EPSV : FtpCommand.PASV;
     final ftpResponse = await passiveCommand.writeAndRead(this);
     if (!ftpResponse.isSuccessful) {
-      throw FtpException(
-          'Could not open transfer channel: ${ftpResponse.message}');
+      throw FtpException('Could not open transfer channel: ${ftpResponse.message}');
     }
     final port = DataParserUtils.parsePort(ftpResponse, isIPV6: supportIPv6);
-    final ClientSocket dataSocket =
-        await ClientSocket.connect(_host, port, timeout: _timeout);
+    final ClientSocket dataSocket = await ClientSocket.connect(_host, port, timeout: _timeout);
     T result;
     try {
       result = await doStuff(dataSocket, _log);
@@ -291,17 +286,14 @@ class FtpSocket {
     TransferChannelCallback doStuff, [
     TransferFailCallback? onFail,
   ]) async {
-    final server = await HostServer.bind(WebIONetworkAddress.anyIPv4.host,
-        transferMode.port ?? Random().nextInt(10000) + 10000);
+    final server =
+        await HostServer.bind(WebIONetworkAddress.anyIPv4.host, transferMode.port ?? Random().nextInt(10000) + 10000);
 
     _log?.call('Listening on ${server.address}:${server.port}');
 
     final ftpResponse = await FtpCommand.PORT.writeAndRead(this, [
-      [
-        transferMode.host!.replaceAll('.', ','),
-        ((server.port >> 8) & 0xFF).toString(),
-        (server.port & 0xFF).toString()
-      ].join(',')
+      [transferMode.host!.replaceAll('.', ','), ((server.port >> 8) & 0xFF).toString(), (server.port & 0xFF).toString()]
+          .join(',')
     ]);
     if (!ftpResponse.isSuccessful) {
       await server.close();
@@ -371,8 +363,7 @@ class FtpTransferMode {
   /// if [port] is null a random port will be used
   ///
   /// if you want to use passive mode use [FtpTransferMode.passive]
-  const FtpTransferMode.active({required this.host, this.port})
-      : assert(port == null || port > 0);
+  const FtpTransferMode.active({required this.host, this.port}) : assert(port == null || port > 0);
 
   const FtpTransferMode._()
       : port = -1,
@@ -410,6 +401,7 @@ class FtpSocketInitOptions {
   final bool supportIPv6;
   final FtpTransferMode transferMode;
   final FtpTransferType transferType;
+  final bool supportUtf8;
 
   const FtpSocketInitOptions({
     required this.host,
@@ -419,5 +411,6 @@ class FtpSocketInitOptions {
     this.supportIPv6 = false,
     this.transferMode = FtpTransferMode.passive,
     this.transferType = FtpTransferType.auto,
+    this.supportUtf8 = false,
   });
 }
